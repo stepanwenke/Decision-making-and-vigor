@@ -1,0 +1,86 @@
+clear all
+% this script generates 1000 synthetic samples for each generative model
+% based on the mean and stdev of the group parameters obtained in our
+% sample. This is the script that is used to generate data to build the
+% confusion matrix and test the recoverability of the parameters. The
+% output of this script is called sim_data_MODEL.mat and should be saved in
+% a separate folder in the simulation_checks folder
+ 
+% 480 trials (2 blocks => each block 240 trials => each stimulus 12 times
+% => set_size * 12)
+
+total_samples = 1000;
+
+%% simulate wmh
+
+day = 1;
+
+if (day == 1)
+    load(['../../comp_modelling_day' num2str(day) '-prg_exclusions/RLWM/model comparison/capacity/K_distribution_pilot2_k_rho_alpha_ll_wmh.mat'])
+else
+    load(['../../comp_modelling_day' num2str(day) '-prg_exclusions/RLWM/K_distribution_retest.mat'])
+end
+
+n_trials = 480;
+fixed_beta = 100;
+
+% Select a random stimulus row from the real data
+% TODO: create a design matrix with randomly generated conditions
+temp = 0;
+for k = 1:5 % K => 1 to 5
+    % Define number of samples based on the K distribution in our data
+    samples = round(percentages(k) * total_samples);
+
+    mp = mu{k};
+    stdev = nu{k};
+    param = stdev.*randn(length(mp),samples)+mp*ones(1,samples);
+    for s = 1:samples
+        parameters = param(:,s);
+        [setsize_order_vec, block_index_vec, stimuli_vec, key_pairs_vec] = design_matrix();
+        [choices, reward] = sim_wmh (parameters, n_trials, setsize_order_vec, block_index_vec, stimuli_vec, key_pairs_vec,k,fixed_beta);
+        
+        data(s+temp,1) = {struct('choices', choices, 'outcomes', reward, 'stimuli', stimuli_vec,'block',block_index_vec,'setsize',setsize_order_vec, 'params', parameters)};
+    end
+    temp = temp + samples;
+end
+
+% Initialize arrays for storing extracted data
+A = [];
+R = [];
+S = [];
+B = [];
+SZ = [];
+params = [];
+
+% Number of samples 
+samples = length(data);
+
+% Loop over each synthetic dataset
+for s = 1:samples
+    % Extract synthetic data
+    synthetic_data = data{s};
+
+    choices = synthetic_data.choices;
+    outcomes = synthetic_data.outcomes;
+    stim = synthetic_data.stimuli;
+    param = synthetic_data.params;
+    block = synthetic_data.block;
+    setsize = synthetic_data.setsize;
+    
+    % Append to arrays
+    A = [A; choices];
+    R = [R; outcomes];
+    S = [S; stim];
+    B = [B; block];
+    SZ = [SZ; setsize];
+    params = [params; param'];
+end
+
+% Save the arrays in a .mat file
+
+if (day == 1)
+    save('output/synthdata_WMH_pilot2.mat', 'A', 'R', 'S','B','SZ', 'params');
+else
+    save('output/synthdata_WMH_pilot2day2.mat', 'A', 'R', 'S','B','SZ', 'params');
+end
+%save ('output/recovery_output.mat','data', 'mp', 'stdev' , 'param')

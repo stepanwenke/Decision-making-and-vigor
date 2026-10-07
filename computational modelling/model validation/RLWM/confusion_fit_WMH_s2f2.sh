@@ -1,0 +1,28 @@
+#!/bin/bash
+#SBATCH --job-name=fit_WMH_array_sim2_fit2
+#SBATCH --time=3-1:00:00
+#SBATCH -N1 --exclusive
+#SBATCH --mem=64G
+#SBATCH --cpus-per-task=16
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=stepan.wenke@ki.se
+
+# Define the range of iterations (1 to 10)
+#SBATCH --array=1-10
+
+module load MATLAB/2024a-hpc1-bdist
+MATLAB='matlab -nodesktop -nosplash'
+
+# Capture the array task ID (1, 2, ..., 10)
+sim_model=2
+fit_model=2
+files_generated=0
+day=1
+input_ite=${SLURM_ARRAY_TASK_ID}
+
+echo "NEW: Starting iteration $input_ite..."
+
+# Pass the TASK_ID to the MATLAB function
+${MATLAB} -batch "model_fitting_fun_job(${sim_model}, ${fit_model}, ${files_generated}, ${day}, ${input_ite})" > "logs/model_fitting_ite${input_ite}_s${sim_model}_f${fit_model}.log" 2>&1
+
+echo "Finished iteration $input_ite."

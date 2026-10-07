@@ -1,0 +1,216 @@
+var rlwm_styles = `
+
+/* for initial image - 22vw width*/
+.rlwm-img1 {
+    width: 22vw;
+    height: 22vw;
+    margin: 1vw;
+}
+
+.rlwm-img-no-border {
+    border: none
+}
+
+.rlwm-img-border {
+    border: 1px solid black;
+}
+
+.rlwm-fixation {
+    font-size: 300%;
+}
+
+/* .jspsych-btn { 
+  padding: 2% 2%;
+  margin: 2% 2%;
+  font-size: 1.1vw;
+} */
+
+img {
+    /* Stepan change */
+    max-width: 100%;
+    max-height: 71%;
+}
+
+.rlwm-instruct {
+    column-count: 2;
+    font-size: 150%;
+}
+
+.rlwm-instruct3 {
+    margin: auto;
+    width: 70%;
+    font-size: 1.5vw;
+    line-height: 5vmin;
+}
+
+.rlwm-enterId {
+    margin: auto;
+    width: 50%;
+    font-size: 1.5vw;
+    line-height: 5vmin;
+}
+
+ul.rlwm-instruct2 {
+    text-align: left;
+}
+
+.rlwm-res-text {
+    /* Stepan change */
+    margin-top: 1em;
+    line-height: 5vmin;
+}
+
+.rlwm-consentContainerDiv {
+    width: 70%;
+    position: relative;
+    left: 10%;
+    right: 10%;
+    background-color: white;
+    border: 5px solid rgb(135, 0, 82);
+    padding-left: 5%;
+    padding-right: 5%;
+}
+
+.rlwm-KILogoIMG {
+    max-width: 15%;
+    position: absolute;
+    left: 3%;
+    top: 0%;
+}
+
+.rlwm-textDiv {
+    margin: auto;
+    width: 50%;
+    line-height: 5vmin;
+    /*for responsiveness */
+}
+
+#rlwm-bonusTrial {
+    margin: auto;
+    width: 100%;
+    line-height: 5vmin;
+    /*for responsiveness */
+  }
+
+.rlwm-parent-div {
+    display: flex;
+}
+
+.rlwm-child-div {
+    width: 100%;
+}
+
+body {
+    background-color: #c0c0c0;
+}
+
+
+/* ---------------------------------- */
+/*      Full-screen element           */
+/* ---------------------------------- */
+
+.text-box-error {
+    border: 0.5em solid #db4343 /* white */;
+    background-color: #cbd1d1 /* rgb(56, 65, 65) */;
+  }
+
+/* ---------------------------------- */
+/*      jsPsych                       */
+/* ---------------------------------- */
+
+.jspsych-instructions-pagenum {
+    font-size: 1.1vw;
+}
+
+.jspsych-display-element {
+    font-size: 1.5em;
+    line-height: 5vmin;
+}
+
+.jspsych-instructions-nav {
+    padding: 0 !important;
+}
+
+/* .jspsych-survey-multi-choice-question {
+    margin-left: 5em; 
+    margin-top: 1em; 
+    margin-bottom: 1em; 
+    text-align: left;
+}
+
+.jspsych-survey-multi-choice-option {
+    line-height: 1.2;
+} */
+
+#jspsych-survey-multi-choice-preamble {
+    line-height: 1.2;
+}
+#jspsych-survey-multi-choice-option-0-0 {
+    line-height: 1.2;
+}
+#jspsych-survey-multi-choice-option-0-1 {
+    line-height: 1.2;
+}
+#jspsych-survey-multi-choice-option-0-2 {
+    line-height: 1.2;
+}
+#jspsych-survey-multi-choice-option-0-3 {
+    line-height: 1.2;
+}
+#jspsych-survey-multi-choice-option-0-4 {
+    line-height: 1.2;
+}
+#jspsych-survey-multi-choice-option-1-0 {
+    line-height: 1.2;
+}
+#jspsych-survey-multi-choice-option-1-1 {
+    line-height: 1.2;
+}
+#jspsych-survey-multi-choice-option-1-2 {
+    line-height: 1.2;
+}
+#jspsych-survey-multi-choice-option-1-3 {
+    line-height: 1.2;
+}
+#jspsych-survey-multi-choice-option-1-4 {
+    line-height: 1.2;
+}
+#jspsych-survey-multi-choice-option-2-0 {
+    line-height: 1.2;
+}
+#jspsych-survey-multi-choice-option-2-1 {
+    line-height: 1.2;
+}
+#jspsych-survey-multi-choice-option-2-2 {
+    line-height: 1.2;
+}
+#jspsych-survey-multi-choice-option-2-3 {
+    line-height: 1.2;
+}
+#jspsych-survey-multi-choice-option-2-4 {
+    line-height: 1.2;
+}
+#jspsych-survey-multi-choice-option-3-0 {
+    line-height: 1.2;
+}
+#jspsych-survey-multi-choice-option-3-1 {
+    line-height: 1.2;
+}
+
+#jspsych-survey-multi-choice-0 {
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+#jspsych-survey-multi-choice-1 {
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+#jspsych-survey-multi-choice-2 {
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+/* span.required {
+    color: #c0c0c0;
+} */
+`

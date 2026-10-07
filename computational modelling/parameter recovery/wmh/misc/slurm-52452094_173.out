@@ -1,0 +1,66 @@
+Array task ID = 987
+
+------------------------------------------------------------------------
+       Segmentation violation detected at Wed May  6 05:37:45 2026
+------------------------------------------------------------------------
+Architecture     : glnxa64
+Processor ID     : Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz
+Host Name        : n1766
+Locale           : en_US
+
+
+Abnormal termination:
+Segmentation violation
+
+Current Thread: 'GTP_1' id 22933969385024
+
+Register State (from fault):
+  RAX = 000014dbbb191780  RBX = 000014dbbb1915d0
+  RCX = 7265767265737074  RDX = 000014dbbb191770
+  RSP = 000014dbbb1915a0  RBP = 000014dbbb1915b0
+  RSI = 0000000000000000  RDI = 000014dbbb1915d0
+
+   R8 = 000014db90394ea0   R9 = 00000000cccccccd
+  R10 = 0000000000258def  R11 = 0000000000000004
+  R12 = 000014dbbb191700  R13 = 000014dbbb1915d0
+  R14 = 000014db90145870  R15 = 000014dbbb191770
+
+  RIP = 000014dbc0107bfc  EFL = 0000000000010206
+
+   CS = 0033   FS = 0000   GS = 0000
+
+Stack Trace (from fault):
+[  0] 0x000014dbc0107bfc /home/x_stewe/.MathWorks/ServiceHost/-mw_shared_installs/v2026.5.0.3/bin/glnxa64/mathworksservicehost/rcf/matlabconnector/serviceprocess/rcf/client-v1/../../../../../../../../bin/glnxa64/libmwagentdirectoryclient.so+00318460 _ZNK5agent9directory22DirectoryServiceClient34queryDirectoryForServiceUUIDsAsyncERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE+00000012
+[  1] 0x000014dbc01095fe /home/x_stewe/.MathWorks/ServiceHost/-mw_shared_installs/v2026.5.0.3/bin/glnxa64/mathworksservicehost/rcf/matlabconnector/serviceprocess/rcf/client-v1/../../../../../../../../bin/glnxa64/libmwagentdirectoryclient.so+00325118 _ZNK5agent9directory22DirectoryServiceClient29queryDirectoryForServiceUUIDsERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE+00000030
+[  2] 0x000014dbaf2221bc /home/x_stewe/.MathWorks/ServiceHost/-mw_shared_installs/v2026.5.0.3/bin/glnxa64/spf/serviceproviders/agent/webwindowservice/libmwagentwebwindowservice.so+00266684
+[  3] 0x000014dbaf22eeca /home/x_stewe/.MathWorks/ServiceHost/-mw_shared_installs/v2026.5.0.3/bin/glnxa64/spf/serviceproviders/agent/webwindowservice/libmwagentwebwindowservice.so+00319178
+[  4] 0x000014dbbbe6eab2 /home/x_stewe/.MathWorks/ServiceHost/-mw_shared_installs/v2026.5.0.3/bin/glnxa64/spf/framework/agent/spf/framework/libmwagentspfframework.so+00989874
+[  5] 0x000014dbbbdf3a68 /home/x_stewe/.MathWorks/ServiceHost/-mw_shared_installs/v2026.5.0.3/bin/glnxa64/spf/framework/agent/spf/framework/libmwagentspfframework.so+00485992
+[  6] 0x000014dbbbdf3cdc /home/x_stewe/.MathWorks/ServiceHost/-mw_shared_installs/v2026.5.0.3/bin/glnxa64/spf/framework/agent/spf/framework/libmwagentspfframework.so+00486620
+[  7] 0x000014dbbbdfc7b7 /home/x_stewe/.MathWorks/ServiceHost/-mw_shared_installs/v2026.5.0.3/bin/glnxa64/spf/framework/agent/spf/framework/libmwagentspfframework.so+00522167
+[  8] 0x000014dbbbe02b3c /home/x_stewe/.MathWorks/ServiceHost/-mw_shared_installs/v2026.5.0.3/bin/glnxa64/spf/framework/agent/spf/framework/libmwagentspfframework.so+00547644
+[  9] 0x000014dbbbe02e4f /home/x_stewe/.MathWorks/ServiceHost/-mw_shared_installs/v2026.5.0.3/bin/glnxa64/spf/framework/agent/spf/framework/libmwagentspfframework.so+00548431
+[ 10] 0x000014dbbbe034ba /home/x_stewe/.MathWorks/ServiceHost/-mw_shared_installs/v2026.5.0.3/bin/glnxa64/spf/framework/agent/spf/framework/libmwagentspfframework.so+00550074
+[ 11] 0x000014dbbbe04865 /home/x_stewe/.MathWorks/ServiceHost/-mw_shared_installs/v2026.5.0.3/bin/glnxa64/spf/framework/agent/spf/framework/libmwagentspfframework.so+00555109
+[ 12] 0x000014dbd412e4a4 /home/x_stewe/.MathWorks/ServiceHost/-mw_shared_installs/v2026.5.0.3/bin/glnxa64/../../sys/os/glnxa64/libstdc++.so.6+00955556
+[ 13] 0x000014dbd3e8b2ea                                   /lib64/libc.so.6+00570090
+[ 14] 0x000014dbd3f103d0                                   /lib64/libc.so.6+01115088
+
+
+** This crash report has been written to /home/x_stewe/.MathWorks/ServiceHost/n1766/logs/MathWorksServiceHost_crash_267315.log **
+{Error using parpool (line 133)
+Parallel pool failed to start with the following error. For more detailed
+information, validate the profile 'Processes' in the Cluster Profile Manager.
+
+Error in recover_fit_K_WMH (line 2)
+parpool('local', 16);
+
+Caused by:
+    Error using
+    parallel.internal.pool.AbstractInteractiveClient>iThrowWithCause (line 256)
+    Failed to start pool.
+        Error using parallel.Job/submit (line 414)
+        Unable to save file
+        '/home/x_stewe/.matlab/local_cluster_jobs/R2024a/Job111/Task2-16.in.mat'.
+        The file could not be closed, and might now be corrupt.
+} 

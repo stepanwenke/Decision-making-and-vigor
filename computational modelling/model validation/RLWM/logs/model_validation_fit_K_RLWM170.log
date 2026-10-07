@@ -1,0 +1,326 @@
+Starting parallel pool (parpool) using the 'local' profile ...
+[Warning: The Cluster reported an error while destroying a job. The error was:
+Could not open file
+"/home/x_stewe/.matlab/local_cluster_jobs/R2024a/Job2860.in.mat", the error
+returned was: Unable to find file or directory
+'/home/x_stewe/.matlab/local_cluster_jobs/R2024a/Job2860.in.mat'...] 
+[> In parallel.internal.cluster.CJSJobMethods.destroyOneJob (line 79)
+In parallel.job.CJSCommunicatingJob>@(job)CJSJobMethods.destroyOneJob(job.Parent,job,job.Support,job.SupportID) (line 114)
+In parallel.job/CJSCommunicatingJob/destroyJob (line 114)
+In parallel.Job>iDeleteJobs (line 1662)
+In parallel.internal.cluster.hetfun (line 57)
+In parallel/Job/delete (line 1458)
+In parallel/Cluster/hDeleteOneJob (line 1043)
+In parallel.internal.pool.AbstractInteractiveClient>iDeleteJobs (line 304)
+In parallel.internal.pool/AbstractInteractiveClient/pRemoveOldJobs (line 192)
+In parallel.internal.pool/AbstractInteractiveClient/start (line 81)
+In parallel.internal.pool.AbstractClusterPool>iStartClient (line 797)
+In parallel.internal.pool.AbstractClusterPool.hBuildPool (line 623)
+In parallel.internal.pool.doParpool (line 22)
+In parpool (line 118)
+In model_validation_fit_K_RLWM (line 2)] 
+[Warning: The Cluster reported an error while destroying a job. The error was:
+Could not open file
+"/home/x_stewe/.matlab/local_cluster_jobs/R2024a/Job2861.in.mat", the error
+returned was: Unable to find file or directory
+'/home/x_stewe/.matlab/local_cluster_jobs/R2024a/Job2861.in.mat'...] 
+[> In parallel.internal.cluster.CJSJobMethods.destroyOneJob (line 79)
+In parallel.job.CJSCommunicatingJob>@(job)CJSJobMethods.destroyOneJob(job.Parent,job,job.Support,job.SupportID) (line 114)
+In parallel.job/CJSCommunicatingJob/destroyJob (line 114)
+In parallel.Job>iDeleteJobs (line 1662)
+In parallel.internal.cluster.hetfun (line 57)
+In parallel/Job/delete (line 1458)
+In parallel/Cluster/hDeleteOneJob (line 1043)
+In parallel.internal.pool.AbstractInteractiveClient>iDeleteJobs (line 304)
+In parallel.internal.pool/AbstractInteractiveClient/pRemoveOldJobs (line 192)
+In parallel.internal.pool/AbstractInteractiveClient/start (line 81)
+In parallel.internal.pool.AbstractClusterPool>iStartClient (line 797)
+In parallel.internal.pool.AbstractClusterPool.hBuildPool (line 623)
+In parallel.internal.pool.doParpool (line 22)
+In parpool (line 118)
+In model_validation_fit_K_RLWM (line 2)] 
+[Warning: The Cluster reported an error while destroying a job. The error was:
+Could not open file
+"/home/x_stewe/.matlab/local_cluster_jobs/R2024a/Job2866.in.mat", the error
+returned was: Unable to find file or directory
+'/home/x_stewe/.matlab/local_cluster_jobs/R2024a/Job2866.in.mat'...] 
+[> In parallel.internal.cluster.CJSJobMethods.destroyOneJob (line 79)
+In parallel.job.CJSCommunicatingJob>@(job)CJSJobMethods.destroyOneJob(job.Parent,job,job.Support,job.SupportID) (line 114)
+In parallel.job/CJSCommunicatingJob/destroyJob (line 114)
+In parallel.Job>iDeleteJobs (line 1662)
+In parallel.internal.cluster.hetfun (line 57)
+In parallel/Job/delete (line 1458)
+In parallel/Cluster/hDeleteOneJob (line 1043)
+In parallel.internal.pool.AbstractInteractiveClient>iDeleteJobs (line 304)
+In parallel.internal.pool/AbstractInteractiveClient/pRemoveOldJobs (line 192)
+In parallel.internal.pool/AbstractInteractiveClient/start (line 81)
+In parallel.internal.pool.AbstractClusterPool>iStartClient (line 797)
+In parallel.internal.pool.AbstractClusterPool.hBuildPool (line 623)
+In parallel.internal.pool.doParpool (line 22)
+In parpool (line 118)
+In model_validation_fit_K_RLWM (line 2)] 
+[Warning: The Cluster reported an error while destroying a job. The error was:
+Could not open file
+"/home/x_stewe/.matlab/local_cluster_jobs/R2024a/Job2870.in.mat", the error
+returned was: Unable to find file or directory
+'/home/x_stewe/.matlab/local_cluster_jobs/R2024a/Job2870.in.mat'...] 
+[> In parallel.internal.cluster.CJSJobMethods.destroyOneJob (line 79)
+In parallel.job.CJSCommunicatingJob>@(job)CJSJobMethods.destroyOneJob(job.Parent,job,job.Support,job.SupportID) (line 114)
+In parallel.job/CJSCommunicatingJob/destroyJob (line 114)
+In parallel.Job>iDeleteJobs (line 1662)
+In parallel.internal.cluster.hetfun (line 57)
+In parallel/Job/delete (line 1458)
+In parallel/Cluster/hDeleteOneJob (line 1043)
+In parallel.internal.pool.AbstractInteractiveClient>iDeleteJobs (line 304)
+In parallel.internal.pool/AbstractInteractiveClient/pRemoveOldJobs (line 192)
+In parallel.internal.pool/AbstractInteractiveClient/start (line 81)
+In parallel.internal.pool.AbstractClusterPool>iStartClient (line 797)
+In parallel.internal.pool.AbstractClusterPool.hBuildPool (line 623)
+In parallel.internal.pool.doParpool (line 22)
+In parpool (line 118)
+In model_validation_fit_K_RLWM (line 2)] 
+[Warning: The Cluster reported an error while destroying a job. The error was:
+Could not open file
+"/home/x_stewe/.matlab/local_cluster_jobs/R2024a/Job2871.in.mat", the error
+returned was: Unable to find file or directory
+'/home/x_stewe/.matlab/local_cluster_jobs/R2024a/Job2871.in.mat'...] 
+[> In parallel.internal.cluster.CJSJobMethods.destroyOneJob (line 79)
+In parallel.job.CJSCommunicatingJob>@(job)CJSJobMethods.destroyOneJob(job.Parent,job,job.Support,job.SupportID) (line 114)
+In parallel.job/CJSCommunicatingJob/destroyJob (line 114)
+In parallel.Job>iDeleteJobs (line 1662)
+In parallel.internal.cluster.hetfun (line 57)
+In parallel/Job/delete (line 1458)
+In parallel/Cluster/hDeleteOneJob (line 1043)
+In parallel.internal.pool.AbstractInteractiveClient>iDeleteJobs (line 304)
+In parallel.internal.pool/AbstractInteractiveClient/pRemoveOldJobs (line 192)
+In parallel.internal.pool/AbstractInteractiveClient/start (line 81)
+In parallel.internal.pool.AbstractClusterPool>iStartClient (line 797)
+In parallel.internal.pool.AbstractClusterPool.hBuildPool (line 623)
+In parallel.internal.pool.doParpool (line 22)
+In parpool (line 118)
+In model_validation_fit_K_RLWM (line 2)] 
+[Warning: The Cluster reported an error while destroying a job. The error was:
+Could not open file
+"/home/x_stewe/.matlab/local_cluster_jobs/R2024a/Job2872.in.mat", the error
+returned was: Unable to find file or directory
+'/home/x_stewe/.matlab/local_cluster_jobs/R2024a/Job2872.in.mat'...] 
+[> In parallel.internal.cluster.CJSJobMethods.destroyOneJob (line 79)
+In parallel.job.CJSCommunicatingJob>@(job)CJSJobMethods.destroyOneJob(job.Parent,job,job.Support,job.SupportID) (line 114)
+In parallel.job/CJSCommunicatingJob/destroyJob (line 114)
+In parallel.Job>iDeleteJobs (line 1662)
+In parallel.internal.cluster.hetfun (line 57)
+In parallel/Job/delete (line 1458)
+In parallel/Cluster/hDeleteOneJob (line 1043)
+In parallel.internal.pool.AbstractInteractiveClient>iDeleteJobs (line 304)
+In parallel.internal.pool/AbstractInteractiveClient/pRemoveOldJobs (line 192)
+In parallel.internal.pool/AbstractInteractiveClient/start (line 81)
+In parallel.internal.pool.AbstractClusterPool>iStartClient (line 797)
+In parallel.internal.pool.AbstractClusterPool.hBuildPool (line 623)
+In parallel.internal.pool.doParpool (line 22)
+In parpool (line 118)
+In model_validation_fit_K_RLWM (line 2)] 
+Connected to parallel pool with 16 workers.
+START: 2026-06-18 09:27:52
+Subject 170, Model original_model_rlwm, K = 1, Iteration 12
+Subject 170, Model original_model_rlwm, K = 1, Iteration 6
+Subject 170, Model original_model_rlwm, K = 1, Iteration 15
+Subject 170, Model original_model_rlwm, K = 1, Iteration 4
+Subject 170, Model original_model_rlwm, K = 1, Iteration 2
+Subject 170, Model original_model_rlwm, K = 1, Iteration 7
+Subject 170, Model original_model_rlwm, K = 1, Iteration 9
+Subject 170, Model original_model_rlwm, K = 1, Iteration 8
+Subject 170, Model original_model_rlwm, K = 1, Iteration 3
+Subject 170, Model original_model_rlwm, K = 1, Iteration 16
+Subject 170, Model original_model_rlwm, K = 1, Iteration 10
+Subject 170, Model original_model_rlwm, K = 1, Iteration 1
+Subject 170, Model original_model_rlwm, K = 1, Iteration 11
+Subject 170, Model original_model_rlwm, K = 1, Iteration 13
+Subject 170, Model original_model_rlwm, K = 1, Iteration 5
+Iteration time (s): 0.40111
+Subject 170, Model original_model_rlwm, K = 1, Iteration 14
+Iteration time (s): 0.46113
+Iteration time (s): 0.50338
+Iteration time (s): 0.48032
+Iteration time (s): 0.47735
+Iteration time (s): 0.59472
+Iteration time (s): 0.59157
+Iteration time (s): 0.61724
+Subject 170, Model original_model_rlwm, K = 1, Iteration 19
+Iteration time (s): 0.59583
+Iteration time (s): 0.59468
+Iteration time (s): 0.59961
+Iteration time (s): 0.60259
+Iteration time (s): 0.60992
+Iteration time (s): 0.77108
+Subject 170, Model original_model_rlwm, K = 1, Iteration 20
+Subject 170, Model original_model_rlwm, K = 1, Iteration 18
+Iteration time (s): 0.73758
+Subject 170, Model original_model_rlwm, K = 1, Iteration 17
+Iteration time (s): 0.82534
+Iteration time (s): 0.36562
+Iteration time (s): 0.44661
+Iteration time (s): 0.45283
+Iteration time (s): 0.44591
+Subject 170, Model original_model_rlwm, K = 2, Iteration 12
+Subject 170, Model original_model_rlwm, K = 2, Iteration 6
+Subject 170, Model original_model_rlwm, K = 2, Iteration 15
+Iteration time (s): 0.23848
+Subject 170, Model original_model_rlwm, K = 2, Iteration 4
+Subject 170, Model original_model_rlwm, K = 2, Iteration 2
+Subject 170, Model original_model_rlwm, K = 2, Iteration 7
+Subject 170, Model original_model_rlwm, K = 2, Iteration 9
+Subject 170, Model original_model_rlwm, K = 2, Iteration 8
+Subject 170, Model original_model_rlwm, K = 2, Iteration 3
+Subject 170, Model original_model_rlwm, K = 2, Iteration 14
+Subject 170, Model original_model_rlwm, K = 2, Iteration 16
+Subject 170, Model original_model_rlwm, K = 2, Iteration 10
+Subject 170, Model original_model_rlwm, K = 2, Iteration 1
+Subject 170, Model original_model_rlwm, K = 2, Iteration 11
+Subject 170, Model original_model_rlwm, K = 2, Iteration 13
+Subject 170, Model original_model_rlwm, K = 2, Iteration 5
+Iteration time (s): 0.35704
+Iteration time (s): 0.28033
+Iteration time (s): 0.31862
+Iteration time (s): 0.32203
+Iteration time (s): 0.30086
+Iteration time (s): 0.2618
+Iteration time (s): 0.37633
+Iteration time (s): 0.38257
+Subject 170, Model original_model_rlwm, K = 2, Iteration 20
+Iteration time (s): 0.43055
+Iteration time (s): 0.37368
+Subject 170, Model original_model_rlwm, K = 2, Iteration 19
+Subject 170, Model original_model_rlwm, K = 2, Iteration 17
+Iteration time (s): 0.3963
+Iteration time (s): 0.42081
+Subject 170, Model original_model_rlwm, K = 2, Iteration 18
+Iteration time (s): 0.58458
+Iteration time (s): 0.23559
+Iteration time (s): 0.47738
+Iteration time (s): 0.62872
+Iteration time (s): 0.4399
+Iteration time (s): 0.40874
+Iteration time (s): 0.42197
+Subject 170, Model original_model_rlwm, K = 3, Iteration 12
+Subject 170, Model original_model_rlwm, K = 3, Iteration 6
+Subject 170, Model original_model_rlwm, K = 3, Iteration 15
+Subject 170, Model original_model_rlwm, K = 3, Iteration 4
+Subject 170, Model original_model_rlwm, K = 3, Iteration 2
+Subject 170, Model original_model_rlwm, K = 3, Iteration 7
+Subject 170, Model original_model_rlwm, K = 3, Iteration 9
+Subject 170, Model original_model_rlwm, K = 3, Iteration 8
+Iteration time (s): 0.26153
+Subject 170, Model original_model_rlwm, K = 3, Iteration 3
+Subject 170, Model original_model_rlwm, K = 3, Iteration 14
+Subject 170, Model original_model_rlwm, K = 3, Iteration 16
+Subject 170, Model original_model_rlwm, K = 3, Iteration 10
+Subject 170, Model original_model_rlwm, K = 3, Iteration 1
+Subject 170, Model original_model_rlwm, K = 3, Iteration 11
+Subject 170, Model original_model_rlwm, K = 3, Iteration 13
+Subject 170, Model original_model_rlwm, K = 3, Iteration 5
+Iteration time (s): 0.35829
+Iteration time (s): 0.37508
+Iteration time (s): 0.3836
+Iteration time (s): 0.33517
+Iteration time (s): 0.33614
+Iteration time (s): 0.30517
+Iteration time (s): 0.3623
+Iteration time (s): 0.45283
+Iteration time (s): 0.4371
+Iteration time (s): 0.4422
+Iteration time (s): 0.45201
+Iteration time (s): 0.4513
+Iteration time (s): 0.44375
+Iteration time (s): 0.44993
+Iteration time (s): 0.44081
+Subject 170, Model original_model_rlwm, K = 3, Iteration 17
+Subject 170, Model original_model_rlwm, K = 3, Iteration 20
+Subject 170, Model original_model_rlwm, K = 3, Iteration 18
+Iteration time (s): 0.25598
+Subject 170, Model original_model_rlwm, K = 3, Iteration 19
+Iteration time (s): 0.35987
+Iteration time (s): 0.37865
+Iteration time (s): 0.41952
+Subject 170, Model original_model_rlwm, K = 4, Iteration 12
+Subject 170, Model original_model_rlwm, K = 4, Iteration 6
+Subject 170, Model original_model_rlwm, K = 4, Iteration 15
+Subject 170, Model original_model_rlwm, K = 4, Iteration 4
+Subject 170, Model original_model_rlwm, K = 4, Iteration 2
+Subject 170, Model original_model_rlwm, K = 4, Iteration 7
+Subject 170, Model original_model_rlwm, K = 4, Iteration 9
+Subject 170, Model original_model_rlwm, K = 4, Iteration 8
+Subject 170, Model original_model_rlwm, K = 4, Iteration 3
+Subject 170, Model original_model_rlwm, K = 4, Iteration 14
+Subject 170, Model original_model_rlwm, K = 4, Iteration 16
+Subject 170, Model original_model_rlwm, K = 4, Iteration 10
+Subject 170, Model original_model_rlwm, K = 4, Iteration 1
+Subject 170, Model original_model_rlwm, K = 4, Iteration 11
+Subject 170, Model original_model_rlwm, K = 4, Iteration 13
+Subject 170, Model original_model_rlwm, K = 4, Iteration 5
+Iteration time (s): 0.10673
+Iteration time (s): 0.30328
+Iteration time (s): 0.20565
+Iteration time (s): 0.30883
+Iteration time (s): 0.23162
+Iteration time (s): 0.46626
+Iteration time (s): 0.43688
+Iteration time (s): 0.40849
+Iteration time (s): 0.43496
+Iteration time (s): 0.44814
+Iteration time (s): 0.45098
+Iteration time (s): 0.4279
+Iteration time (s): 0.42315
+Iteration time (s): 0.42135
+Iteration time (s): 0.42657
+Iteration time (s): 0.43868
+Subject 170, Model original_model_rlwm, K = 4, Iteration 20
+Subject 170, Model original_model_rlwm, K = 4, Iteration 18
+Subject 170, Model original_model_rlwm, K = 4, Iteration 19
+Subject 170, Model original_model_rlwm, K = 4, Iteration 17
+Iteration time (s): 0.27473
+Iteration time (s): 0.43471
+Iteration time (s): 0.43306
+Iteration time (s): 0.42413
+Subject 170, Model original_model_rlwm, K = 5, Iteration 12
+Subject 170, Model original_model_rlwm, K = 5, Iteration 6
+Iteration time (s): 0.24057
+Subject 170, Model original_model_rlwm, K = 5, Iteration 15
+Subject 170, Model original_model_rlwm, K = 5, Iteration 4
+Subject 170, Model original_model_rlwm, K = 5, Iteration 2
+Subject 170, Model original_model_rlwm, K = 5, Iteration 7
+Subject 170, Model original_model_rlwm, K = 5, Iteration 9
+Subject 170, Model original_model_rlwm, K = 5, Iteration 8
+Subject 170, Model original_model_rlwm, K = 5, Iteration 3
+Subject 170, Model original_model_rlwm, K = 5, Iteration 14
+Subject 170, Model original_model_rlwm, K = 5, Iteration 16
+Subject 170, Model original_model_rlwm, K = 5, Iteration 10
+Subject 170, Model original_model_rlwm, K = 5, Iteration 1
+Subject 170, Model original_model_rlwm, K = 5, Iteration 11
+Subject 170, Model original_model_rlwm, K = 5, Iteration 13
+Subject 170, Model original_model_rlwm, K = 5, Iteration 5
+Iteration time (s): 0.29572
+Iteration time (s): 0.35344
+Iteration time (s): 0.27707
+Iteration time (s): 0.47258
+Iteration time (s): 0.41906
+Iteration time (s): 0.41505
+Iteration time (s): 0.4763
+Iteration time (s): 0.45767
+Iteration time (s): 0.42103
+Iteration time (s): 0.46806
+Iteration time (s): 0.44601
+Iteration time (s): 0.44558
+Iteration time (s): 0.4219
+Iteration time (s): 0.43842
+Iteration time (s): 0.455
+Subject 170, Model original_model_rlwm, K = 5, Iteration 20
+Subject 170, Model original_model_rlwm, K = 5, Iteration 18
+Subject 170, Model original_model_rlwm, K = 5, Iteration 19
+Subject 170, Model original_model_rlwm, K = 5, Iteration 17
+Iteration time (s): 0.36007
+Iteration time (s): 0.4278
+Iteration time (s): 0.42963
+Iteration time (s): 0.42507
+Finished subject 170, model original_model_rlwm
+END:   2026-06-18 09:27:57
+Elapsed seconds: 5.5

@@ -1,0 +1,6 @@
+Array task ID = 889
+Unable to load ApplicationService for command `service`
+tcache_thread_shutdown(): unaligned tcache chunk detected
+
+MATLAB is exiting because of fatal error
+/var/lib/slurm/slurmd/job52493269/slurm_script: line 28: 1900147 Killed                  ${MATLAB} -batch "recover_fit_K_WMH(${subject},${model});exit" > recover_fit_K_WMH_${subject}.log

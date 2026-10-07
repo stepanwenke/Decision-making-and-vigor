@@ -1,0 +1,3 @@
+Array task ID = 301
+mkdir: cannot create directory ‘/home/x_stewe/.MathWorks’: Not a directory
+[2026-06-05T14:00:53.055] error: *** JOB 53178507 ON n1612 CANCELLED AT 2026-06-05T14:00:53 DUE TO TIME LIMIT ***

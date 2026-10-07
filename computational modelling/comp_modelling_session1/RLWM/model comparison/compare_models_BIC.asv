@@ -1,0 +1,176 @@
+clear all
+
+day = '1';
+dt = '240228_EM_';
+% models={'k_rho_alpha_ll_rlwm','k_rho_alpha_decay_ll_rlwm',...
+%      'k_rho_alpha_decay_bias_ll_rlwm', 'k_rho_alpha_decay_bias_lapse_ll_rlwm', 'll_rlwm'};
+% Npar=[2 3 4 5 5];
+
+% models={'k_rho_alpha_ll_rlwm'};
+% Npar=[2];
+
+models = {'k_rho_alpha_ll_rlwm', ...
+      'k_rho_alpha_decay_ll_rlwm', ...
+      'k_rho_alpha_bias_ll_rlwm', ...
+      'k_rho_alpha_lapse_ll_rlwm', ...
+      'k_rho_alpha_pers_ll_rlwm',...
+      'k_rho_alpha_persRLWM_ll_rlwm',...
+      'k_rho_alpha_ll_wmh',...
+      'oriignal_model_rlwm'
+      };
+
+Npar=[2,3,3,3,3,3,5,5]; 
+fixed_beta = 10;
+
+% 
+% fm{1} = 'unconstrained_linear'; % unconstrained_linear
+% fm{2} = 'constrained_quadratic'; % constrained_quadratic
+% fm{3} = 'constrained_linear'; % constrained_linear
+
+% folder{1} = 'original effort';
+% folder{2} = 'effort';
+
+% Load data
+% target_path = ['../../comp_modelling_day' day '-prg_exclusions/Effort/physical/'];
+% addpath(target_path);
+
+% Load data
+load('data_RLWM_retest.mat');
+
+docomp = 1;
+Nsample = 2000;
+
+
+for model=1:size(models,2)
+
+    % Load the best iteration
+    pl=[];
+    for ite=1:10
+        load ([char(models(model)) filesep char(dt) '-' char(models{model}) '-ite' num2str(ite) '.mat']);
+        pl(ite)=PL(end);
+    end
+
+    % Load the K param for each participant
+    load(['capacity/capacity_retest_' char(models(model))]);
+    
+    [x y]=min(pl);
+    SelectIte(model)=y;
+    load ([char(models(model)) filesep char(dt) '-' char(models{model}) '-ite' num2str(y)]);
+    Np = Npar(model);
+    Nsj = length(A);
+    ld = [char(dt) '-day' char(day) '-' char(models(model)) '-ite' num2str(y)];
+
+    
+    if docomp
+        oo = ones(1,Nsample);
+        muo = mu*oo; nuo = nu*oo;
+        
+        rand('seed',sum(100*clock));
+        LLi=zeros(Nsample,1);
+        ddl = zeros(Np,Nsj);
+        
+        for sj=1:size(A,1)
+            fprintf('subject %i \r',sj)
+            
+            a=A(sj,:);
+            r=R(sj,:);
+            b=B(sj,:);
+            s=S(sj,:);            
+            set_size=SetSize(sj,:);
+            
+
+            est = diag(sqrt(nu))*randn(Np,Nsample)+mu*ones(1,Nsample);
+            for k=1:Nsample;
+                LLi(k)=feval(models{model},est(:,k),a,r,s,b,set_size,K(sj),Z,0,fixed_beta);
+                if ~mod(k,500);fprintf('model %i subject %i sample %i\r',model,sj,k);end
+            end
+            iL(sj) = log(sum(exp(-LLi))/Nsample);
+
+            %maxLL = max(-LLi);
+            %iL(sj) = maxLL + log(sum(exp(-LLi - maxLL))) - log(Nsample);
+
+        end
+        
+        
+        % compute integrated BIC
+        %for k=1:length(A); Nch(k)=length(A{k});end; Nch = Nch(:);
+        Nch = size(A, 1) * ones(size(A,2), 1);  % same number of trials for each subject
+        bici  = -2*sum(iL)   + 2*Np*log(sum(Nch)); % integrated BIC
+        
+        eval(['save ' ld '_meanerror bici iL mu nu E ld model']);
+    end  
+end
+
+%% Plot the best model
+
+set(groot, 'defaultAxesTickLabelInterpreter', 'none');
+
+day = '1';
+dt = '240228_EM_';
+
+% Models to compare
+% models_to_compare={'k_rho_alpha_ll_rlwm','k_rho_alpha_decay_ll_rlwm',...
+%     'k_rho_alpha_decay_bias_ll_rlwm', 'k_rho_alpha_decay_bias_lapse_ll_rlwm'};
+models_to_compare = models;
+
+bici_values = zeros(length(models_to_compare), 1);  % to store BICi for each model
+
+for m = 1:length(models_to_compare)
+    model = models_to_compare{m};
+
+    % Construct pattern with wildcard for the unknown ite number
+    pattern = sprintf('%s-day%s-%s-ite*_meanerror.mat', dt, day, model);
+
+    % Find matching file(
+    files = dir(pattern);
+
+    if isempty(files)
+        warning('No file found for model: %s', model);
+        bici_values(m) = NaN;
+        continue
+    end
+
+    % Load the current file
+    file_to_load = fullfile(files(1).folder, files(1).name);
+    data = load(file_to_load);
+
+    % Loading bici if found
+    if isfield(data, 'bici')
+        bici_values(m) = data.bici;
+    else
+        warning('No variable "bici" found in file: %s', files(1).name);
+        bici_values(m) = NaN;
+    end
+end
+
+% --- Plotting ---
+figure;
+bar(bici_values);
+set(gca, 'XTickLabel', models_to_compare, 'XTick', 1:length(models_to_compare));
+ylabel('BICi');
+title(sprintf('Model Fit Comparison (Day %s)', day));
+
+% Optional: highlight best (lowest BIC)
+[~, best_idx] = min(bici_values);
+hold on;
+bar(best_idx, bici_values(best_idx), 'r'); % highlight best model in red
+hold off;
+
+% Add text labels above each bar
+xtips = 1:length(bici_values);
+ytips = bici_values;
+labels = arrayfun(@(x) sprintf('%.1f', x), bici_values, 'UniformOutput', false);
+text(xtips, ytips, labels, ...
+     'HorizontalAlignment', 'center', ...
+     'VerticalAlignment', 'bottom', ...
+     'FontSize', 10, ...
+     'FontWeight', 'bold');
+
+fprintf('Best model: %s (BICi = %.2f)\n', models_to_compare{best_idx}, bici_values(best_idx));
+
+% --- Save plot with timestamp ---
+timestamp = datestr(now, 'yyyy-mm-dd_HH-MM-SS');
+filename = sprintf('comparison_plot_%s.png', timestamp);
+saveas(gcf, filename);
+
+fprintf('Saved plot as: %s\n', filename);

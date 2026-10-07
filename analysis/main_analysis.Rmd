@@ -1,0 +1,2363 @@
+---
+title: "Main analysis"
+author: "Štěpán Wenke"
+date: "2025-06-02"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  fig.width = 20,
+  fig.height = 8
+)
+
+options(tinytex.verbose = TRUE)
+
+```
+
+## Settings
+
+```{r settings}
+library(correlation)
+library(nFactors)
+library(dplyr)
+library(irr)
+library(psych)
+library(corrr)
+library(rempsyc)
+library(ggplot2)
+library(tidyr)
+library(robustbase)
+library(reshape2)
+library(RColorBrewer)
+library(here)
+library(patchwork)
+library(blavaan)
+library(lavaanPlot)
+library(lavaan)
+
+```
+
+## Exclusions
+
+3 types:
+- Pre-registration (PRG)
+- Exclusion of GNG GO > 90 and Effort 100 (NEW)
+- No exlusions (full)
+
+```{r}
+# Exclusion of GNG GO > 90 and Effort 100
+new_excl_day1 <- c()
+prg_excluded_day1 <- c()
+prg_excluded_day2 <- c()
+
+
+```
+
+## Load data
+```{r load_data}
+# Day 1
+
+data_day1 <- read.csv("comp_modelling/session1_comp_params.csv")
+data_day1 <- data_day1 
+
+
+quest_data_day1_full_id <- read.csv("../output/session1/questionnaire_scores_high_means_apathy.csv")
+quest_data_day1_full_id <- quest_data_day1_full_id %>%
+  mutate(subjID = paste0("output/",subjID))
+
+# data_day1_quests <- cbind(data_day1,quest_data_day1)
+data_day1_quests <- merge(
+  data_day1,
+  quest_data_day1_full_id,
+  by = "subjID"
+)
+
+### WMH Params ###
+# Load  
+data_day1_wmh <- read.csv("comp_modelling/session1/wmh_params.csv")
+
+# and append it to the prg dataset to later verify that alpha and rho from wmh model does not affect the EFA
+data_day1_quests_wmh <- cbind(data_day1_quests, data_day1_wmh)
+
+
+
+# Day 2
+
+data_day2 <- read.csv("comp_modelling/session2_comp_params.csv")
+data_day2 <- data_day2 
+# %>%
+#   select(-c(phys_beta, phys_k, phys_g))
+
+quest_data_day2_full_id <- read.csv("../output/session2/questionnaire_scores.csv")
+
+quest_data_day2_full_id <- quest_data_day2_full_id %>%
+  mutate(subjID = ifelse(subjID == "67e6e73a9192e805dad3a03", "67e6e73a9a192e805dad3a03", subjID)) %>%
+  mutate(subjID = paste0("output/",subjID))
+
+# Merge the wrong subject so it has only row
+quest_data_day2_full_id <- quest_data_day2_full_id %>%
+  group_by(subjID) %>%
+  summarise(across(everything(), ~ first(na.omit(.x))), .groups = "drop")
+
+data_day2_quests <- merge(
+  data_day2,
+  quest_data_day2_full_id,
+  by = "subjID"
+)
+
+# Remove "output/" prefix from subjID before
+data_day1$subjID <- gsub("output/", "", data_day1$subjID)
+data_day2$subjID <- gsub("output/", "", data_day2$subjID)
+
+# Remove "output/" prefix from subjID in questionnaire data
+data_day1_quests$subjID <- gsub("output/", "", data_day1_quests$subjID)
+data_day2_quests$subjID <- gsub("output/", "", data_day2_quests$subjID)
+
+
+# Load performance measures
+rlwm_performance <- read.csv("../output/session1/rlwm_performance.csv")
+rlwm_performance <- rlwm_performance %>%
+  rename(rlwm_performance = prop_corr_all_set_sizes)
+gng_performance <- read.csv("../output/session1/gng_performance.csv")
+gng_performance <- gng_performance %>%
+  rename(subjID = id, gng_performance = Overall) %>%
+  select(subjID, gng_performance)
+gng_measures <- read.csv("../output/session1/gng_measures.csv")
+effort_performance <- read.csv("../output/session1/effort/participant_avg.csv")
+effort_performance <- effort_performance %>%
+  rename(subjID = participant, effort_accepted = prop) %>%
+  select(subjID, effort_accepted)
+
+data_day1_measures <- merge(
+  data_day1_quests,
+  rlwm_performance,
+  by = "subjID"
+)
+
+data_day1_measures <- merge(
+  data_day1_measures,
+  gng_performance,
+  by = "subjID"
+)
+
+data_day1_measures <- cbind(data_day1_measures, gng_measures)
+
+data_day1_measures <- data_day1_measures %>% 
+  select(-X)
+
+data_day1_measures <- merge(
+  data_day1_measures,
+  effort_performance,
+  by = "subjID"
+)
+
+```
+# Descriptive stats of the parameters 
+
+```{r}
+# Function to create descriptive table with quantiles
+create_descriptive_table <- function(df, param_rename = NULL) {
+  
+  # 1. Describe stats using psych
+  desc <- describe(df)
+  
+  # 2. Calculate quantiles: Q5, Q25, Q75, Q95
+  quantiles <- df %>%
+    summarise(across(everything(), list(
+      Q5 = ~ quantile(., 0.05, na.rm = TRUE),
+      Q25 = ~ quantile(., 0.25, na.rm = TRUE),
+      Q75 = ~ quantile(., 0.75, na.rm = TRUE),
+      Q95 = ~ quantile(., 0.95, na.rm = TRUE)
+    ))) %>%
+    pivot_longer(
+      cols = everything(),
+      names_to = c("Parameter", "Quantile"),
+      names_pattern = "(.*)_(Q5|Q25|Q75|Q95)$"
+    ) %>%
+    pivot_wider(
+      names_from = Quantile,
+      values_from = value,
+      values_fn = mean
+    )
+  
+  # 3. Prepare descriptive stats table and join quantiles
+  desc_paper <- desc %>%
+    select(mean, sd, se, median) %>%
+    rename(
+      M = mean,
+      SD = sd,
+      SE = se,
+      Median = median
+    ) %>%
+    mutate(Parameter = rownames(.)) %>%
+    left_join(quantiles, by = "Parameter")
+  
+  # 4. Rename parameters if a rename vector is provided
+  if (!is.null(param_rename)) {
+    desc_paper <- desc_paper %>%
+      mutate(Parameter = recode(Parameter, !!!param_rename))
+  }
+  
+  # 5. Reorder columns: Parameter first, then stats
+  desc_paper <- desc_paper %>%
+    select(Parameter, M, SD, SE, Median, Q5, Q25, Q75, Q95) %>%
+    mutate(across(where(is.list), ~ unlist(.)))  # clean list-columns
+  
+  return(desc_paper)
+}
+
+# Key parameters for the main text
+key_params <- c("rlwm_alpha", "gng_beta", "gng_eps", "foraging_exit_threshold", "phys_k")
+
+# Parameter renaming vector for readability
+param_rename <- c(
+  rlwm_alpha = "RLWM Alpha",
+  gng_beta = "GNG Beta",
+  gng_eps = "GNG Epsilon",
+  foraging_exit_threshold = "Foraging Exit Threshold",
+  phys_k = "Effort K"
+)
+
+# Short table with key parameters
+short_table_data <- data_day1 %>% select(all_of(key_params))
+short_table <- create_descriptive_table(short_table_data, param_rename)
+
+
+
+# Full table excluding subjID (identifier)
+full_table <- create_descriptive_table(data_day1 %>% select(-subjID))
+
+# Generate nice tables
+nice_short_table <- nice_table(short_table, title = c("Table 1", "Descriptive Statistics of Key Parameters"))
+nice_full_table <- nice_table(full_table, title = c("Supplemental Table", "Descriptive Statistics of All Parameters"))
+
+# Print or export tables
+# print(nice_short_table, preview = "docx")
+# print(nice_full_table, preview = "docx")
+
+nice_short_table
+
+# Create descriptive plots for all parameters in df short_table_data
+
+### Make a boxplot ###
+# Define the parameters and their display names
+key_params <- c("rlwm_alpha", "gng_beta", "gng_eps", "foraging_exit_threshold", "phys_k")
+param_rename <- c(
+  "RLWM Alpha" = "rlwm_alpha",
+  "GNG Beta" = "gng_beta",
+  "GNG Epsilon" = "gng_eps",
+  "Foraging Exit Threshold" = "foraging_exit_threshold",
+  "Effort K" = "phys_k"
+)
+
+# Reshape data for ggplot (long format)
+plot_data <- data_day1 %>%
+  select(all_of(key_params)) %>%
+  rename(!!!param_rename) %>%
+  pivot_longer(cols = everything(), names_to = "Parameter", values_to = "Value")
+
+# Create the simple boxplot
+p <- ggplot(plot_data, aes(x = Parameter, y = Value, fill = Parameter)) +
+  geom_boxplot(outlier.color = "red", outlier.shape = 16, alpha = 0.8) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "none",       # Remove legend since x-axis labels are clear
+    axis.text.x = element_text(angle = 45, hjust = 1), # Tilt labels for readability
+    panel.grid.major.y = element_line(color = "grey90"),
+    panel.grid.minor = element_blank()
+  ) +
+  labs(
+    x = NULL, 
+    y = "Value",
+    title = "Distribution of Key Model Parameters"
+  ) +
+  scale_fill_brewer(palette = "Set2") # Professional color palette
+
+# Print the plot
+print(p)
+
+# Optional: Save to file
+# ggsave("parameter_boxplot.png", p, width = 8, height = 5, dpi = 300)
+
+
+```
+
+# Parameter correlations
+
+```{r}
+data_day1_cor <- correlation(data_day1, method = "spearman", p_adjust = "none")
+
+data_day1_cor_plot <- data_day1_cor %>%
+  summary(redundant = TRUE) %>%
+  plot() +
+    theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
+
+print(data_day1_cor_plot)
+
+param_names <- colnames(data_day1[-1])
+
+rlwm_params <- grep("^rlwm_", param_names, value = TRUE)
+gng_params  <- grep("^gng_",  param_names, value = TRUE)
+phys_params <- grep("^phys_", param_names, value = TRUE)
+
+rlwm_pairs <- combn(rlwm_params, 2, simplify = FALSE)
+gng_pairs  <- combn(gng_params,  2, simplify = FALSE)
+phys_pairs <- combn(phys_params, 2, simplify = FALSE)
+
+task_pairs <- c(rlwm_pairs, gng_pairs, phys_pairs)
+
+for (p in task_pairs) {
+ a <-  plot(cor_test(data_day1, p[1], p[2], method = "spearman"))
+ print(a)
+}
+
+```
+
+
+# Distribution of the questionnaires
+
+```{r}
+# Select only questionnaire columns (excluding subjID)
+quest_long <- quest_data_day1_full_id %>%
+  pivot_longer(
+    cols = -subjID, 
+    names_to = "Questionnaire", 
+    values_to = "Score"
+  )
+
+# Plot histograms in facets
+ggplot(quest_long, aes(x = Score)) +
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +
+  facet_wrap(~ Questionnaire, scales = "free") +
+  theme_minimal(base_size = 14) +
+  labs(title = "Histograms of Questionnaire Scores",
+       x = "Score", y = "Count")
+```
+
+# Latent profile analysis 
+
+```{r}
+
+library(tidyLPA)
+
+# --------------------------
+# 1. Prepare data (standardize, remove subjID)
+# --------------------------
+scaled_data <- data_day1 %>%
+  select(rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold, phys_k) %>%
+  scale() %>%
+  as.data.frame()
+
+# --------------------------
+# 2. Estimate LPA model
+# --------------------------
+results_z <- estimate_profiles(
+  scaled_data,
+  n_profiles = 3,
+  models = 3
+)
+
+# --------------------------
+# 3. Extract profile means
+# --------------------------
+estimates <- get_estimates(results_z)
+
+profile_means_z <- estimates %>%
+  filter(Category == "Means") %>%
+  select(Class, Parameter, Estimate)
+
+# --------------------------
+# 4. Plot line plot of profiles
+# --------------------------
+ggplot(profile_means_z,
+       aes(x = Parameter, y = Estimate,
+           group = as.factor(Class), color = as.factor(Class))) +
+  geom_line(size = 1.2) +
+  geom_point(size = 2) +
+  theme_minimal(base_size = 14) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Latent Profiles (Standardized Data)",
+       x = "Variable", y = "Mean (z-score)",
+       color = "Profile")
+
+```
+
+
+# Day 1
+
+### EFA
+
+
+```{r day1}
+data_day1_constrained_quadratic_full_quests <- data_day1_quests
+data_day1_constrained_quadratic_full <- data_day1
+ data_day1_constrained_quadratic_prg <- data_day1_constrained_quadratic_full
+
+ data_day1_constrained_quadratic_prg_quests <- data_day1_constrained_quadratic_full_quests 
+
+
+# Factor analysis using factanal
+fa_data_day1_constrained_quadratic_prg <- data_day1_constrained_quadratic_prg %>%
+  select(rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold, phys_k)  # Exclude non-FA relevant columns
+
+
+
+
+
+# DO PCA and screeplot
+pca_result <- prcomp(fa_data_day1_constrained_quadratic_prg, center = TRUE, scale. = TRUE)
+
+# Base R scree plot
+screeplot(pca_result, type = "lines", main = "Scree Plot")
+
+# Do a paralell analysis to determine the number of factors
+fa_parallel <- fa.parallel(fa_data_day1_constrained_quadratic_prg, fa = "fa", n.iter = 100)
+
+fa_day1_constrained_quadratic_prg <- factanal(
+  fa_data_day1_constrained_quadratic_prg,
+  factors = 2,
+  rotation = "varimax",
+  scores = "regression"
+)
+
+fa(
+  fa_data_day1_constrained_quadratic_prg,
+  nfactors = 2,
+  rotate = "varimax",
+  fm="pa"
+)
+
+
+
+print(fa_day1_constrained_quadratic_prg)
+print(loadings(fa_day1_constrained_quadratic_prg), cutoff = 0)
+
+
+# Factor analysis using principal factor solution
+fa_day1_constrained_quadratic_prg_pa <- fa(fa_data_day1_constrained_quadratic_prg,nfactors=2,fm="pa",rotate = "varimax")
+
+## Print nice factor analysis ##
+fa_temp <- fa_day1_constrained_quadratic_prg_pa$loadings[, 1:2] %>%
+  as.data.frame() %>%
+  mutate(Parameter = rownames(fa_day1_constrained_quadratic_prg_pa$loadings)) %>%
+  mutate(Parameter = recode(Parameter,
+                           "rlwm_alpha" = "RLWM Alpha",
+                           "gng_beta" = "GNG Beta",
+                           "gng_eps" = "GNG Epsilon",
+                           "foraging_exit_threshold" = "Foraging Exit Threshold",
+                           "phys_k" = "Effort Kappa")) %>%
+  mutate("Factor 1" = PA1, "Factor 2" = PA2)%>%
+  select(-PA1, -PA2)
+
+nice_table(fa_temp)
+
+#### Testing 1 factor solution of vigor params ####
+fa_data_day1_constrained_quadratic_prg_only_vigor <- fa_data_day1_constrained_quadratic_prg %>%
+  select(gng_eps, foraging_exit_threshold,phys_k)
+
+fa_day1_constrained_quadratic_prg_only_vigor <- factanal(
+  fa_data_day1_constrained_quadratic_prg_only_vigor,
+  factors = 1,
+  rotation = "varimax",
+  scores = "regression"
+)
+```
+### EFA with Spearman correlation 
+
+```{r}
+
+
+
+data_spearman_day1_constrained_quadratic_prg <- data_day1_constrained_quadratic_prg %>%
+  select(rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold, phys_k)
+
+# Run the EFA on the original data for the comparison
+fa(
+  data_spearman_day1_constrained_quadratic_prg,
+  nfactors = 2,
+  rotate = "varimax",
+  fm="pa"
+)
+
+
+data_cor_spearman_day1_constrained_quadratic_prg <- cor(data_spearman_day1_constrained_quadratic_prg, method = "spearman")
+
+# Run the EFA on the spearman correlations
+fa(
+  data_cor_spearman_day1_constrained_quadratic_prg,
+  nfactors = 2,
+  rotate = "varimax",
+  fm="pa"
+)
+
+fa(
+  data_cor_spearman_day1_constrained_quadratic_prg,
+  nfactors = 2,
+  rotate = "oblimin",
+  fm="pa"
+)
+
+data_log_effort_spearman_day1_constrained_quadratic_prg <- data_spearman_day1_constrained_quadratic_prg %>%
+    mutate(log_phys_k = log(phys_k)) %>%
+    select(-phys_k)
+
+# Run the EFA on the original data with log(effort k)
+fa(
+  data_log_effort_spearman_day1_constrained_quadratic_prg,
+  nfactors = 2,
+  rotate = "varimax",
+  fm="pa"
+)
+
+# Run the EFA on the original data with log(effort k)
+fa(
+  data_log_effort_spearman_day1_constrained_quadratic_prg,
+  nfactors = 2,
+  rotate = "oblimin",
+  fm="pa"
+)
+
+```
+
+
+### EFA with WMH
+```{r}
+data_day1_quests_wmh_fa <- data_day1_quests_wmh %>%
+  select(wmh_alpha,wmh_rho, gng_beta, gng_eps, foraging_exit_threshold, phys_k)  # Exclude non-FA relevant columns
+
+fa_day1_constrained_quadratic_prg_wmh <- factanal(
+  data_day1_quests_wmh_fa,
+  factors = 2,
+  rotation = "varimax",
+  scores = "regression"
+)
+
+fa_day1_constrained_quadratic_prg_wmh
+
+wmh_efa_pa <- fa(data_day1_quests_wmh_fa,nfactors=2, fm="pa")
+wmh_efa_pa$loadings
+```
+
+
+### Correlations
+
+```{r day1_cor_1}
+# Add factor scores to the data
+data_day1_constrained_quadratic_prg_with_factors <- data_day1_constrained_quadratic_prg %>%
+  mutate(
+    factor1_pa = fa_day1_constrained_quadratic_prg_pa$scores[, 1],
+    factor2_pa = fa_day1_constrained_quadratic_prg_pa$scores[, 2],
+    factor1 = fa_day1_constrained_quadratic_prg$scores[, 1],
+    factor2 = fa_day1_constrained_quadratic_prg$scores[, 2]
+  )
+
+# Add factor scores to the quests data
+data_day1_constrained_quadratic_prg_quests <- data_day1_constrained_quadratic_prg_quests %>%
+  mutate(
+    factor1_pa = fa_day1_constrained_quadratic_prg_pa$scores[, 1],
+    factor2_pa = fa_day1_constrained_quadratic_prg_pa$scores[, 2],
+    factor1 = fa_day1_constrained_quadratic_prg$scores[, 1],
+    factor2 = fa_day1_constrained_quadratic_prg$scores[, 2]
+  )
+
+# Reduce the quests data for better readability
+data_day1_constrained_quadratic_prg_quests <- data_day1_constrained_quadratic_prg_quests %>%
+  select(subjID,factor1,factor2,factor1_pa,factor2_pa,behavioral_activation,emotional_sensitivity,social_motivation,Score_ASRM,Score_CESD,Score_SHPS,Score_PSS,BIS,BAS_Drive,BAS_Fun,BAS_Reward, rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold,phys_k) #%>%
+  # mutate(rt_average = rt_foraging + rt_effort / 2)
+
+### Correlation matrix of 5 params for the paper ###
+data_5params_day1_constrained_quadratic_prg_quests <- data_day1_constrained_quadratic_prg_quests %>%
+  select(
+    "RLWM Alpha"             = rlwm_alpha,
+    "GNG Beta"               = gng_beta,
+    "GNG Epsilon"            = gng_eps,
+    "Foraging Exit Threshold"= foraging_exit_threshold,
+    "Effort K"               = phys_k
+  )
+
+corr_5params_day1_constrained_quadratic_prg_quests <- correlation(
+    data_5params_day1_constrained_quadratic_prg_quests,
+    method = "spearman"
+  ) %>%
+  summary(redundant = TRUE) %>%
+  plot() +
+  labs(title = NULL) +
+  theme(
+    axis.text.x      = element_text(angle = 45, hjust = 1, size = 14),
+    axis.text.y      = element_text(size = 14),
+    strip.text       = element_text(size = 14),  # diagonal labels in redundant plots
+    legend.title     = element_text(size = 13),
+    legend.text      = element_text(size = 12)
+  )
+
+print(corr_5params_day1_constrained_quadratic_prg_quests)
+
+# Add effort rt betas
+effort_betas_day1 <- read.csv('../output/session1/effort/effort_betas_day_1.csv')
+foraging_betas_day1 <- read.csv('../output/session1/foraging/foraging_betas_day_1.csv')
+
+foraging_betas_day1 <- foraging_betas_day1 %>%
+  select(subjID, galaxy_type)
+
+# cbind the betas to the data_day1_constrained_quadratic_prg_quests
+data_day1_constrained_quadratic_prg_quests_with_betas <- merge(
+  data_day1_constrained_quadratic_prg_quests,
+  effort_betas_day1,
+  by = "subjID",
+  all.x = TRUE
+)
+
+data_day1_constrained_quadratic_prg_quests_with_betas <- merge(
+  data_day1_constrained_quadratic_prg_quests_with_betas,
+  foraging_betas_day1,
+  by = "subjID",
+  all.x = TRUE
+)
+
+# Parameters correlation matrix
+correlation_matrix_day1_constrained_quadratic_prg_with_betas <- correlation(
+  data_day1_constrained_quadratic_prg_quests_with_betas,
+  method = "spearman",
+  progress = FALSE,
+  p_adjust = "none"
+)
+
+# Plot the correlation matrix
+correlation_matrix_day1_constrained_quadratic_prg_with_betas %>%
+  summary(redundant = TRUE) %>%
+  plot()+
+    theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
+
+
+
+# Parameters correlation matrix
+data_day1_constrained_quadratic_prg_vigor_with_factors <- fa_data_day1_constrained_quadratic_prg_only_vigor %>%
+  mutate(
+    factor1 = fa_day1_constrained_quadratic_prg_only_vigor$scores[, 1]
+  )
+
+
+# Add the questionnaires to the factor analysis data
+fa_data_day1_constrained_quadratic_prg_only_vigor_quests <- data_day1_constrained_quadratic_prg_quests %>%
+  select(subjID, behavioral_activation, emotional_sensitivity, social_motivation, Score_ASRM, Score_CESD, Score_SHPS) %>%
+  bind_cols(factor1 = data_day1_constrained_quadratic_prg_vigor_with_factors$factor1)
+
+correlation_matrix_day1_constrained_quadratic_prg <- correlation(
+  fa_data_day1_constrained_quadratic_prg_only_vigor_quests,
+  method = "spearman"
+)
+
+
+# Reduced correlation matrix for the presentation
+correlation_matrix_day1_constrained_quadratic_prg_reduced <- data_day1_constrained_quadratic_prg_quests %>%
+  select(factor1_pa, factor2_pa, behavioral_activation, Score_ASRM, Score_CESD) %>%
+  correlation(method = "spearman",p_adjust="none")
+
+# Step 2: Filter to keep only rows where one parameter is factor1 or factor2
+corr_filtered <- correlation_matrix_day1_constrained_quadratic_prg_reduced %>%
+  filter(Parameter1 %in% c("factor1_pa", "factor2_pa") & !Parameter2 %in% c("factor1_pa", "factor2_pa"))
+
+# Print a matrix
+correlation_matrix_day1_constrained_quadratic_prg_reduced %>%
+  summary(redundant = FALSE) %>%
+  plot() 
+
+# Flip if needed so all variables are in a consistent column
+corr_clean <- corr_filtered %>%
+  mutate(
+    variable = if_else(Parameter1 %in% c("factor1_pa", "factor2_pa"), Parameter2, Parameter1),
+    factor   = if_else(Parameter1 %in% c("factor1_pa", "factor2_pa"), Parameter1, Parameter2)
+  ) %>%
+  select(factor, variable, rho, CI_low, CI_high, p)
+
+
+corr_clean <- corr_clean %>%
+  mutate(sig = case_when(
+    p < 0.001 ~ "***",
+    p < 0.01  ~ "**",
+    p < 0.05  ~ "*",
+    TRUE      ~ ""
+  ))
+
+corr_clean$variable <- factor(corr_clean$variable, levels = c(
+  "behavioral_activation",
+  "emotional_sensitivity",
+  "social_motivation",
+  "Score_ASRM",
+  "Score_CESD",
+  "Score_SHPS"
+))
+
+poster_cor <- ggplot(corr_clean, aes(x = factor, y = variable, fill = rho)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = paste0(sprintf("%.2f", rho), sig)), size = 7) +
+  scale_fill_gradient2(
+    low = "pink", mid = "white", high = "light blue",
+    midpoint = 0, name = "Spearman's ρ"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Correlation of Vigor and RL with Questionnaires",
+    x = "Latent Factor",
+    y = "Variable"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid = element_blank()
+  ) +
+  coord_fixed()
+
+
+# Filter out unwanted variables
+corr_filtered <- corr_clean %>%
+  filter(!variable %in% c("social_motivation", "emotional_sensitivity"))
+
+# Create the plot with factors on rows and questionnaires on columns
+poster_cor_horizontal <- ggplot(corr_filtered, aes(x = variable, y = factor, fill = rho)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = paste0(sprintf("%.2f", rho), sig)), size = 7) +
+  scale_fill_gradient2(
+    low = "pink", mid = "white", high = "light blue",
+    midpoint = 0, name = "Spearman's ρ"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Correlation of Vigor and RL with Questionnaires",
+    x = "Questionnaire",
+    y = "Latent Factor"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid = element_blank()
+  ) 
+
+# Step 1: Filter only the 8 correlations of interest
+holm_df_OG <- corr_clean %>%
+  filter(variable %in% c("Score_CESD", "Score_ASRM", "Score_SHPS", "behavioral_activation")) %>%
+  filter(factor %in% c("factor1_pa", "factor2_pa")) %>%
+  arrange(p)  # Optional: sort for clearer view
+
+# Step 1: Filter only the 8 correlations of interest
+holm_df <- corr_clean %>%
+  filter(variable %in% c("Score_CESD", "Score_ASRM", "behavioral_activation")) %>%
+  filter(factor %in% c("factor1_pa", "factor2_pa")) %>%
+  arrange(p)  # Optional: sort for clearer view
+
+
+# Step 2: Apply Holm correction
+holm_df <- holm_df %>%
+  mutate(p_holm = p.adjust(p, method = "holm"))
+
+# Step 3: Add corrected significance stars
+holm_df <- holm_df %>%
+  mutate(sig_holm = case_when(
+    p_holm < 0.001 ~ "***",
+    p_holm < 0.01  ~ "**",
+    p_holm < 0.05  ~ "*",
+    TRUE           ~ ""
+  ))
+
+# View results
+print(holm_df)
+
+paper_cor_horizontal <- ggplot(holm_df, aes(x = variable, y = factor, fill = rho)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = paste0(sprintf("%.2f", rho), sig_holm)), size = 7) +
+  scale_fill_gradient2(
+    low = "pink", mid = "white", high = "light blue",
+    midpoint = 0, name = "Spearman's ρ"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Correlation of Vigor and RL with Questionnaires",
+    x = "Questionnaire",
+    y = "Latent Factor"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid = element_blank()
+  )
+
+```
+### Correlations with performance
+
+
+```{r day1_cor_perf}
+# Check the correlations of the parameters and the factors with the actual performance (i.e., performance bonus paid)
+# Load the data
+bonus_total_individual_day1 <- read.csv(paste0(here(),"/output/session1/bonus_total_individual.csv"))
+
+# Append it to the data_day1_constrained_quadratic_prg_with_factors
+# Merge by subjID
+data_day1_performance_factors_params <- merge(data_day1_constrained_quadratic_prg_with_factors, bonus_total_individual_day1, by = "subjID")
+
+data_day1_performance_factors_params_reduced <- data_day1_performance_factors_params %>% 
+  select(rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold, phys_k, factor1_pa, factor2_pa, bonus_total, bonus_rlwm, bonus_gonogo, bonus_foraging, bonus_effort)
+
+# Make a correlation plot
+cor_performance <-  correlation(method="spearman",data_day1_performance_factors_params_reduced)
+
+cor_performance_plot <- summary(cor_performance, redundant = TRUE) %>%
+  plot()
+cor_performance_plot
+
+# Merge data_day1_performance_factors_params and data_day1_constrained_quadratic_prg_quests by subjID
+cor_paper_data <- data_day1_performance_factors_params %>%
+  select(subjID, bonus_effort, bonus_foraging, bonus_rlwm, bonus_gonogo) %>%
+  merge(data_day1_constrained_quadratic_prg_quests, by="subjID") %>%
+  select(factor1_pa,factor2_pa,behavioral_activation, Score_ASRM, Score_CESD, bonus_effort, bonus_foraging, bonus_rlwm, bonus_gonogo)
+
+# performance + correlation of factors with questionnaires all holm corrected (Table S10 in the paper)
+cor_paper <- cor_paper_data %>%
+    correlation(p_adjust = "none",method="spearman") %>%
+    filter(Parameter1 %in% c("factor1_pa", "factor2_pa") & !Parameter2 %in% c("factor1_pa", "factor2_pa")) %>%
+    mutate("p" = p.adjust(p,method="holm")) %>%
+    summary(redundant=TRUE) %>%
+    plot()
+
+print(cor_paper)
+
+
+```
+
+### Cor: params, quests and behavioural measures
+
+```{r day1_cor}
+data_day1_measures <- data_day1_measures %>%
+  mutate(
+    factor1 = fa_day1_constrained_quadratic_prg$scores[, 1],
+    factor2 = fa_day1_constrained_quadratic_prg$scores[, 2]
+  )
+
+data_day1_measures <- data_day1_measures %>%
+  mutate(
+    factor1_pa = fa_day1_constrained_quadratic_prg_pa$scores[, 1],
+    factor2_pa = fa_day1_constrained_quadratic_prg_pa$scores[, 2]
+  )
+
+correlation_day1_params_quests_measures <- correlation(
+  data_day1_measures,
+  method = "spearman",
+  p_adjust = "none"
+)
+
+correlation_day1_params_quests_measures %>%
+  summary(redundant=TRUE) %>%
+  plot() +
+    theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
+
+# Exploratory correlation plots for the paper
+data_day1_quests_params <-  data_day1_constrained_quadratic_prg_quests %>%
+  select(-subjID, -factor1, -factor2)
+
+# 3. Compute full correlation matrix first
+cor_data_day1_quests_params <- correlation(
+  data_day1_quests_params,
+  method = "spearman",
+  p_adjust = "none"
+)
+
+# Define your variable groups
+computational_params <- c("rlwm_alpha", "gng_beta", "gng_eps", 
+                          "foraging_exit_threshold", "phys_k")
+
+questionnaire_vars <- c("behavioral_activation","Score_ASRM","Score_CESD","")
+
+# questionnaire_vars <- setdiff(names(data_day1_quests_params), computational_params)
+
+# Step 3: Extract ONLY the correlations between computational_params and questionnaire_vars
+cor_data_day1_quests_params_filtered <- cor_data_day1_quests_params %>%
+  filter(
+    (Parameter1 %in% computational_params & Parameter2 %in% questionnaire_vars) |
+    (Parameter2 %in% computational_params & Parameter1 %in% questionnaire_vars)
+  )
+  
+cor_data_day1_quests_params_filtered_pholm <- cor_data_day1_quests_params_filtered %>%
+  mutate(p=p.adjust(cor_data_day1_quests_params_filtered$p))
+
+cor_data_day1_quests_params_filtered_pholm %>%
+  summary(redundant=TRUE) %>%
+  plot() +
+    theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
+
+
+```
+
+
+### Correlation of AMI items and parameters
+
+```{r}
+ami_responses <- read.csv(paste0(here(), "/output/session1/ami_responses.csv"))
+
+# Reversing the scale - now high means apathy same as BA
+ami_responses <- ami_responses %>%
+  select(-X) %>%
+  mutate(across(
+    .cols = where(is.numeric),  # Select all numeric columns (your questionnaire items)
+    .fns = ~ 4 - .x            # Reverse: 0→4, 1→3, 2→2, 3→1, 4→0
+  ))
+
+data_day1_params_facs <- data_day1_measures %>%
+  select(foraging_exit_threshold, rlwm_alpha, gng_beta, gng_eps, phys_k,behavioral_activation, factor1_pa, factor2_pa)
+
+data_day1_params_facs_ami <- cbind(data_day1_params_facs,ami_responses)
+
+cor_day1_params_facs_ami <- correlation(
+  data_day1_params_facs_ami,
+  method = "spearman",
+  p_adjust = "none"
+)
+
+computational_params <- c("factor1_pa")
+
+ami_vars <- c("V5","V9","V10","V11","V12","V15")
+
+## !! The scale is not reversed such that the original phrasing is corresponding to the strength of the score: e.g., I go out with friends -> the more I go out the higher the score
+cor_day1_params_facs_ami_filtered <- cor_day1_params_facs_ami %>%
+  filter(
+    (Parameter1 %in% computational_params & Parameter2 %in% ami_vars) 
+  ) 
+
+cor_day1_params_facs_ami_filtered_pholm <- cor_day1_params_facs_ami_filtered %>%
+  mutate(p = p.adjust(p, "holm"))
+
+cor_day1_params_facs_ami_filtered_pholm %>%
+  summary(redundant=FALSE) %>%
+  plot() +
+    theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
+```
+
+
+
+### Scatter plot: Vigor and Mania
+
+```{r day1_scatter}
+# Scatter plot of Vigor and ASRM for the grant application 7/4/2026
+cor_asrm_vigor <- cor_test(data = data_day1_measures, x = "factor2_pa",y =  "Score_ASRM",method = "spearman")
+
+plot_asrm_vigor <- plot(cor_asrm_vigor) +
+    labs(x = "factor 2 (vigor)", y = "ASRM") +
+    theme(
+      axis.title.x = element_text(size = 20),
+      axis.title.y = element_text(size = 20)
+    )
+
+```
+
+### FA plots for the paper
+
+```{r}
+# Extract loadings matrix
+loadings <- as.data.frame(unclass(fa_day1_constrained_quadratic_prg_pa$loadings))
+
+# Add variable names as a column
+loadings$Variable <- rownames(loadings)
+
+# Reshape to long format for ggplot
+loadings_long <- pivot_longer(loadings, 
+                              cols = starts_with("PA"), 
+                              names_to = "Factor", 
+                              values_to = "Loading")
+
+loadings_long <- loadings_long %>%
+  mutate(Variable = recode(Variable, !!!param_rename))
+
+# Optional: reorder variables by absolute loading for better visualization
+loadings_long <- loadings_long %>%
+  mutate(Variable = factor(Variable, levels = rev(unique(Variable))))
+
+loadings_long <- loadings_long %>%
+  mutate(Factor = recode(Factor, "PA1" = "RL", "PA2" = "Vigor"))
+
+# Plot with fixed scales so y-axis labels appear only once on the left
+ggplot(loadings_long, aes(x = Variable, y = Loading, fill = Factor)) +
+  geom_bar(stat = "identity", position = "identity", width = 0.7) +
+  geom_hline(yintercept = c(-0.3, 0.3), color = "black", linewidth = 1, linetype = "dashed") +
+  coord_flip() +
+  scale_fill_brewer(palette = "Set1") +
+  facet_wrap(~ Factor, nrow = 1, scales = "fixed") +
+  labs(title = "",
+       x = "Parameters",
+       y = "Loadings") +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 10),
+    axis.title.y = element_text(size = 12),
+    legend.position = "none"
+  )
+
+```
+
+
+### Normality tests
+
+```{r}
+# Assess the normality of the day1 data
+shapiro_results <- lapply(fa_data_day1_constrained_quadratic_prg, shapiro.test)
+
+shapiro_results_df <- data.frame(
+  Parameter = names(shapiro_results),
+  W = sapply(shapiro_results, function(x) x$statistic),
+  p_value = sapply(shapiro_results, function(x) round(as.numeric(x$p.value),3))
+)
+print(shapiro_results_df)
+
+library(MVN)
+# X should be a dataframe or matrix with numeric variables
+result <- mvn(data = fa_data_day1_constrained_quadratic_prg, mvn_test = "mardia")  # Mardia’s skewness & kurtosis
+result <- mvn(data = fa_data_day1_constrained_quadratic_prg, mvn_test = "hz")      # Henze–Zirkler test
+result <- mvn(data = fa_data_day1_constrained_quadratic_prg, mvn_test = "royston") # Royston’s test
+```
+### Bayesian SEM
+
+```{r}
+
+#### Tighter Priors ####
+# 1. Define the Model with Tighter Priors
+# Note: SDs are calculated as (CI_Width / 4) / 2
+model_final <- '
+  # --- Measurement Model ---
+  
+  # RL Factor
+  # gng_beta: CI [8.4, 79.2] -> Width=70.8 -> SD=17.7 (Used 13.0 / 2 )
+  # gng_eps:  CI [-23.9, 1.6] -> Width=25.5 -> SD=6.4 (Used 5.0 / 2)
+  
+  RL =~ rlwm_alpha + 
+        prior("normal(19.6, 6.5)")*gng_beta + 
+        prior("normal(-4.8, 2.5)")*gng_eps
+  
+  # Vigor Factor
+  # phys_k:   CI [-0.62, 0.04] -> Width=0.66 -> SD=0.165 (Used 0.12 / 2)
+  # gng_eps:  CI [0.01, 3.35] -> Width=3.34 -> SD=0.84 (Used 0.6 / 2)
+  
+  Vigor =~ foraging_exit_threshold + 
+           prior("normal(-0.11, 0.6)")*phys_k + 
+           prior("normal(0.50, 0.3)")*gng_eps
+  
+
+
+'
+
+# 2. Run the Model
+# Arguments: burnin (warmup) + sample (post-warmup)
+fit_final <- bcfa(model_final, 
+                  data = data_day1_constrained_quadratic_prg_quests,
+                  n.chains = 4, 
+                  burnin = 2000,    # Warmup iterations
+                  sample = 8000,    # Sampling iterations (Total = 8000)
+                  seed = 12345)     # Optional: for reproducibility
+
+# 3. Check Diagnostics
+summary(fit_final, psrf = TRUE, neff = TRUE)
+
+
+# Plot the measurement model for Day 1
+lavaanPlot(fit_final, coefs = TRUE, stand = FALSE, covs = TRUE, stars = c("latent","covs"),graph_options = list(rankdir = "TB"))
+
+# Estimate the goodness of the fit
+blavInspect(fit_final, "rhat")
+blavInspect(fit_final, "neff")
+fitm_fitfinal <- fitmeasures(fit_final)
+
+
+### Wider priors ###
+# 1. Define the Model with wider Priors
+# Note: SDs are calculated as (CI_Width / 4)
+model_final_wider <- '
+  # --- Measurement Model ---
+  
+  # RL Factor
+  # gng_beta: CI [8.4, 79.2] -> Width=70.8 -> SD=17.7 (Used 13.0 for tighter stability)
+  # gng_eps:  CI [-23.9, 1.6] -> Width=25.5 -> SD=6.4 (Used 5.0 for tighter stability)
+  
+  RL =~ rlwm_alpha + 
+        prior("normal(19.6, 13)")*gng_beta + 
+        prior("normal(-4.8, 5)")*gng_eps
+  
+  # Vigor Factor
+  # phys_k:   CI [-0.62, 0.04] -> Width=0.66 -> SD=0.165 (Used 0.12)
+  # gng_eps:  CI [0.01, 3.35] -> Width=3.34 -> SD=0.84 (Used 0.6)
+  
+  Vigor =~ foraging_exit_threshold + 
+           prior("normal(-0.11, 0.12)")*phys_k + 
+           prior("normal(0.50, 0.6)")*gng_eps
+  
+
+
+'
+
+# 2. Run the Model
+# Arguments: burnin (warmup) + sample (post-warmup)
+fit_final_wider <- bcfa(model_final_wider, 
+                  data = data_day1_constrained_quadratic_prg_quests,
+                  n.chains = 4, 
+                  burnin = 2000,    # Warmup iterations
+                  sample = 8000,    # Sampling iterations (Total = 8000)
+                  seed = 12345)     # Optional: for reproducibility
+
+# 3. Check Diagnostics
+summary(fit_final_wider, psrf = TRUE, neff = TRUE)
+
+
+# Plot the measurement model for Day 1
+lavaanPlot(fit_final_wider, coefs = TRUE, stand = FALSE, covs = TRUE, stars = c("latent","covs"),graph_options = list(rankdir = "TB"))
+
+blavInspect(fit_final_wider, "rhat")
+blavInspect(fit_final_wider, "neff")
+fitm_fitfinal <- fitmeasures(fit_final_wider)
+
+### No priors ###
+# 1. Define the Model with no Priors
+model_final_nopriors <- '
+  # --- Measurement Model ---
+  
+  # RL Factor
+
+  RL =~ rlwm_alpha + 
+        gng_beta + 
+        gng_eps
+  
+  # Vigor Factor
+  Vigor =~ foraging_exit_threshold + 
+           phys_k + 
+           gng_eps
+  
+
+
+'
+
+# 2. Run the Model
+# Arguments: burnin (warmup) + sample (post-warmup)
+fit_final_nopriors <- bcfa(model_final_nopriors, 
+                  data = data_day1_constrained_quadratic_prg_quests,
+                  n.chains = 4, 
+                  burnin = 2000,    # Warmup iterations
+                  sample = 8000,    # Sampling iterations (Total = 8000)
+                  seed = 12345)     # Optional: for reproducibility
+
+# 3. Check Diagnostics
+summary(fit_final_nopriors, psrf = TRUE, neff = TRUE)
+
+
+# Plot the measurement model for Day 1
+lavaanPlot(fit_final_nopriors, coefs = TRUE, stand = FALSE, covs = TRUE, stars = c("latent","covs"),graph_options = list(rankdir = "TB"))
+
+blavInspect(fit_final_nopriors, "rhat")
+blavInspect(fit_final_nopriors, "neff")
+fitm_fitfinal <- fitmeasures(fit_final_nopriors)
+
+# Compare the models
+#compmodels <- blavCompare(fit_final,fit_final_wider)
+
+```
+
+
+
+# Day 2
+
+```{r day2}
+# Full data no exclusions
+# full_quests <- cbind(data_day2_quests, unconstrained_linear_day2)
+
+data_day2_constrained_quadratic_full <- data_day2
+data_day2_constrained_quadratic_full_quests <- data_day2_quests
+
+data_day2_constrained_quadratic_prg <- data_day2_constrained_quadratic_full
+data_day2_constrained_quadratic_prg_quests <- data_day2_constrained_quadratic_full_quests
+
+# Factor analysis using factanal
+fa_data_day2_constrained_quadratic_prg <- data_day2_constrained_quadratic_prg %>%
+  select(rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold,phys_k)  # Exclude non-FA relevant columns
+
+# print histograms of Day 2 parameters
+plots <- lapply(names(fa_data_day2_constrained_quadratic_prg)[sapply(fa_data_day2_constrained_quadratic_prg, is.numeric)], function(col) {
+  ggplot(fa_data_day2_constrained_quadratic_prg, aes(x = .data[[col]])) +
+    geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+    labs(title = col, x = NULL, y = "count") +
+    theme_minimal()
+})
+
+wrap_plots(plots, ncol = 3)  # or nrow = 1 for a single ro
+
+fa_day2_constrained_quadratic_prg <- factanal(
+  fa_data_day2_constrained_quadratic_prg,
+  factors = 2,
+  rotation = "varimax",
+  scores = "regression"
+)
+
+print(fa_day2_constrained_quadratic_prg)
+
+fa_day2_constrained_quadratic_prg_pa <- fa(fa_data_day2_constrained_quadratic_prg,nfactors=2,fm="pa",rotate = "varimax")
+
+# Add factor scores to the data
+data_day2_constrained_quadratic_prg_with_factors <- data_day2_constrained_quadratic_prg %>%
+  mutate(
+    factor1 = fa_day2_constrained_quadratic_prg$scores[, 1],
+    factor2 = fa_day2_constrained_quadratic_prg$scores[, 2],
+    factor1_pa = fa_day2_constrained_quadratic_prg_pa$scores[, 1],
+    factor2_pa = fa_day2_constrained_quadratic_prg_pa$scores[, 2]
+  )
+
+# Add factor scores to the quests data
+data_day2_constrained_quadratic_prg_quests <- data_day2_constrained_quadratic_prg_quests %>%
+  mutate(
+    factor1 = fa_day2_constrained_quadratic_prg$scores[, 1],
+    factor2 = fa_day2_constrained_quadratic_prg$scores[, 2],
+    factor1_pa = fa_day2_constrained_quadratic_prg_pa$scores[, 1],
+    factor2_pa = fa_day2_constrained_quadratic_prg_pa$scores[, 2]    
+  )
+
+# Reduce the quests data for better readability
+data_day2_constrained_quadratic_prg_quests <- data_day2_constrained_quadratic_prg_quests %>%
+  select(subjID,factor1,factor2,factor1_pa, factor2_pa,behavioral_activation,emotional_sensitivity,social_motivation,Score_ASRM,Score_CESD,Score_SHPS,Score_PSS,BIS,BAS_Drive,BAS_Fun,BAS_Reward, rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold,phys_k)
+
+# Parameters correlation matrix
+correlation_matrix_day2_constrained_quadratic_prg <- correlation(
+  data_day2_constrained_quadratic_prg_quests,
+  method = "spearman",
+  p_adjust = "none"
+)
+
+# Plot the correlation matrix
+correlation_matrix_day2_constrained_quadratic_prg %>%
+  summary(redundant = TRUE) %>%
+  plot() +
+    theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
+
+```
+# Descriptive table
+
+```{r}
+short_table_data_day2 <- data_day2 %>% select(all_of(key_params))
+short_table_day2 <- create_descriptive_table(short_table_data_day2, param_rename)
+
+# Generate nice tables
+nice_short_table_day2 <- nice_table(short_table_day2, title = c("Table 1", "Descriptive Statistics of Key Parameters"))
+
+# print histograms of Day 2 parameters
+plots <- lapply(names(fa_data_day1_constrained_quadratic_prg)[sapply(fa_data_day2_constrained_quadratic_prg, is.numeric)], function(col) {
+  ggplot(fa_data_day1_constrained_quadratic_prg, aes(x = .data[[col]])) +
+    geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+    labs(title = col, x = NULL, y = "count") +
+    theme_minimal()
+})
+
+wrap_plots(plots, ncol = 3)  # or nrow = 1 for a single ro
+
+
+```
+
+
+# Validity of EFA
+
+Inspect that the reason that the factor structure in day 2 is not preserved is not just sample size, i.e., do EFA on the same sample on day 1 and day 2 and compare.
+
+```{r}
+data_day1_with_only_day2_participants <- 
+data_day1_constrained_quadratic_prg %>%
+  filter(subjID %in% data_day2_constrained_quadratic_prg$subjID) %>%
+  select(rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold, phys_k)
+
+# Perform 2 factor EFA
+data_day1_with_only_day2_participants_fa <- factanal(data_day1_with_only_day2_participants, factors = 2)
+print(data_day1_with_only_day2_participants_fa)
+
+data_day1_with_only_day2_participants_fa_pa <- fa(data_day1_with_only_day2_participants, nfactors = 2, fm = "pa")
+print(data_day1_with_only_day2_participants_fa_pa$loadings)
+
+## And now let's do the EFA on the remaining participants from day 1 that were not
+# in day 2
+data_day1_with_no_day2_participants <- data_day1_constrained_quadratic_prg %>%
+  filter(!subjID %in% data_day2_constrained_quadratic_prg$subjID) %>%
+  select(rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold, phys_k)
+
+# Do again 2 factor EFA
+data_day1_with_no_day2_participants_fa <- factanal(data_day1_with_no_day2_participants, factors = 2)
+print(data_day1_with_no_day2_participants_fa)
+
+data_day1_with_no_day2_participants_fa_pa <- fa(data_day1_with_no_day2_participants, nfactors = 2, fm = "pa")
+print(data_day1_with_no_day2_participants_fa_pa$loadings)
+```
+
+
+# ICC
+
+### ICC of EFA
+
+```{r icc-constrained-quadratic-prg}
+###### Loadings method ######
+# Which factoring method to use ml/pa
+fm_method <- "pa"  # "ml" or "pa"
+
+# Make an intersection of PRG exclusion factor scores both for day 1 and day 2
+if (fm_method == "ml") {
+  data_icc_day1_constrained_quadratic_prg_factor_scores <- data_day1_constrained_quadratic_prg_with_factors %>%
+    select(subjID, factor1, factor2) %>%
+    filter(subjID %in% data_day2_constrained_quadratic_prg_with_factors$subjID)
+  
+  data_icc_day2_constrained_quadratic_prg_factor_scores <- data_day2_constrained_quadratic_prg_with_factors %>%
+    select(subjID, factor1, factor2)
+  
+} else if (fm_method == "pa") {
+   data_icc_day1_constrained_quadratic_prg_factor_scores <- data_day1_constrained_quadratic_prg_with_factors %>%
+    select(subjID, factor1_pa, factor2_pa) %>%
+    filter(subjID %in% data_day2_constrained_quadratic_prg_with_factors$subjID)
+  
+  data_icc_day2_constrained_quadratic_prg_factor_scores <- data_day2_constrained_quadratic_prg_with_factors %>%
+    select(subjID, factor1_pa, factor2_pa)
+}
+
+
+# Make an intersection of PRG exclusion data of day 1 that are also in day 2
+data_icc_day1_constrained_quadratic_prg_retest <- data_day1_constrained_quadratic_prg %>%
+  filter(subjID %in% data_day2_constrained_quadratic_prg$subjID)
+
+# Make an intersection of PRG exclusion data of day 2 that are also in day 1
+data_icc_day2_constrained_quadratic_prg_retest <- data_day2_constrained_quadratic_prg %>%
+  filter(subjID %in% data_day1_constrained_quadratic_prg$subjID)
+
+# Get factor scores for participants on day 2 given the loadings from day 1 (if you wanna reproduce older results comment this section and it will use the original factor scores)
+fa_day1_constrained_quadratic_prg_new <- fa(fa_data_day1_constrained_quadratic_prg, nfactors = 2, fm = fm_method, rotate = "varimax")
+fa_day2_constrained_quadratic_prg_new <- fa(fa_data_day2_constrained_quadratic_prg, nfactors = 2, fm = fm_method, rotate = "varimax")
+
+# Get loadings from the Day 1 FA
+fa_day1_constrained_quadratic_prg_loadings <- fa_day1_constrained_quadratic_prg_new$loadings[,1:2]
+
+# Get loadings from the Day 2 FA
+fa_day2_constrained_quadratic_prg_loadings <- fa_day2_constrained_quadratic_prg_new$loadings[,1:2]
+
+# Reduce the data to only the relevant columns
+data_day2_constrained_quadratic_prg_reduced <- data_icc_day2_constrained_quadratic_prg_retest %>%
+  select(rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold,phys_k)
+
+# Get factor scores for day 2 given the loadings from day 1
+fa_scores_day2_constrained_quadratic_prg <- factor.scores(data_day2_constrained_quadratic_prg_reduced, fa_day1_constrained_quadratic_prg_loadings, method = "Thurstone")
+fa_scores_day2_constrained_quadratic_prg_scores <- fa_scores_day2_constrained_quadratic_prg$scores
+
+# Calculate ICC for each day and model
+factor1 <-  icc(cbind(data_icc_day1_constrained_quadratic_prg_factor_scores[,2],fa_scores_day2_constrained_quadratic_prg_scores[,1]), model = "twoway", type = "agreement", unit = "single")
+factor2 <-  icc(cbind(data_icc_day1_constrained_quadratic_prg_factor_scores[,3],fa_scores_day2_constrained_quadratic_prg_scores[,2]), model = "twoway", type = "agreement", unit = "single")
+icc_constrained_quadratic_prg_df <- data.frame(
+  Factor = c("Factor1", "Factor2"),
+  CI_upper = c(factor1$ubound, factor2$ubound),
+  CI_lower = c(factor1$lbound, factor2$lbound),
+  ICC = c(factor1$value, factor2$value)
+)
+
+icc_constrained_quadratic_prg_df
+
+# Make a nice table out of it
+# Rename Factor1 to Factor 1 (RL) and Factor 2 (Vigor)
+icc_constrained_quadratic_prg_df$Factor <- recode(icc_constrained_quadratic_prg_df$Factor, 
+                                                   "Factor1" = "Factor 1 (RL)", 
+                                                   "Factor2" = "Factor 2 (Vigor)")
+
+nice_icc_constrained_quadratic_prg_df <- nice_table(icc_constrained_quadratic_prg_df)
+
+###### Correlation of loadings ######
+fac1_cor_constr_quadratic_prg <- cor(fa_day1_constrained_quadratic_prg_loadings[,1], fa_day2_constrained_quadratic_prg_loadings[,1], method = "spearman")
+fac2_cor_constr_quadratic_prg <- cor(fa_day1_constrained_quadratic_prg_loadings[,2], fa_day2_constrained_quadratic_prg_loadings[,2], method = "spearman")
+print(fac1_cor_constr_quadratic_prg)
+print(fac2_cor_constr_quadratic_prg)
+
+###### ICC of parameters ######
+# Get the common column names between df_1_retest_pp and df_2
+variables <- intersect(names(data_day1_constrained_quadratic_prg), names(data_day2_constrained_quadratic_prg))
+variables <- variables[!variables %in% c("subjID")]  # Exclude factor columns
+
+# List to store ICC results
+icc_params_constrained_quadratic_prg <- list()
+for (variable in variables) {
+  icc_result <- icc(cbind(data_icc_day1_constrained_quadratic_prg_retest[[variable]], data_icc_day2_constrained_quadratic_prg_retest[[variable]]), 
+                    model = "twoway", type = "agreement", unit = "single")
+  
+  icc_params_constrained_quadratic_prg[[variable]] <- list(Variable = variable, 
+                                                            LB = round(icc_result$lbound, 2), 
+                                                            UB = round(icc_result$ubound, 2),
+                                                            ICC = round(icc_result$value, 2))
+}
+
+# Convert list to dataframe
+icc_params_constrained_quadratic_prg_df <- do.call(rbind, icc_params_constrained_quadratic_prg)
+icc_params_constrained_quadratic_prg_df <- as.data.frame(icc_params_constrained_quadratic_prg_df, stringsAsFactors = FALSE)
+# Fix the Variable column
+icc_params_constrained_quadratic_prg_df$Variable <- rownames(icc_params_constrained_quadratic_prg_df)  # Use row names as the correct variable names
+rownames(icc_params_constrained_quadratic_prg_df) <- NULL  # Remove row names after extraction
+# Convert numeric columns
+icc_params_constrained_quadratic_prg_df$LB <- as.numeric(icc_params_constrained_quadratic_prg_df$LB)
+icc_params_constrained_quadratic_prg_df$UB <- as.numeric(icc_params_constrained_quadratic_prg_df$UB)
+icc_params_constrained_quadratic_prg_df$ICC <- as.numeric(icc_params_constrained_quadratic_prg_df$ICC)
+icc_params_constrained_quadratic_prg_df
+
+# Make an output in nice_table
+nice_icc_params_constrained_quadratic_prg_df <- icc_params_constrained_quadratic_prg_df %>%
+  filter(Variable %in% c("rlwm_alpha", "gng_beta", "gng_eps", "foraging_exit_threshold", "phys_k")) %>%
+  mutate(
+    Variable = recode(Variable,
+      "rlwm_alpha" = "RLWM Alpha",
+      "gng_beta" = "GNG Beta",
+      "gng_eps" = "GNG Epsilon",
+      "foraging_exit_threshold" = "Foraging Exit Threshold",
+      "phys_k" = "Effort Kappa"
+    ),
+    CI_lower = LB,
+    CI_upper = UB
+  ) %>%
+  select(Variable,  ICC,CI_lower, CI_upper)
+
+# Make a nice table out of it
+nice_icc_params_constrained_quadratic_prg_df <- nice_table(nice_icc_params_constrained_quadratic_prg_df)
+# print(nice_icc_params_constrained_quadratic_prg_df, preview = "docx")
+
+
+```
+
+### ICC of questionnaires
+
+Let's check how realiable the questionnaires were in order to estimate how "noisy" they are.
+
+```{r}
+# Make the "common" participants dfs for day 1 and day 2
+quest_icc_day1 <- quest_data_day1_full_id %>%
+  filter(subjID %in% quest_data_day2_full_id$subjID)
+
+quest_icc_day2 <- quest_data_day2_full_id %>% # Match it, just checking
+  filter(subjID %in% quest_icc_day1$subjID)
+
+# Do ICC 
+# Get all variable names except subjID
+vars <- setdiff(names(quest_icc_day1), "subjID")
+
+# Run ICC for each variable and store in a dataframe
+quest_icc_df <- do.call(rbind, lapply(vars, function(v) {
+  dat <- data.frame(day1 = quest_icc_day1[[v]], 
+                    day2 = quest_icc_day2[[v]])
+  res <- icc(dat, model = "twoway", type = "agreement", unit = "single")
+  
+  data.frame(
+    variable = v,
+    ICC = res$value,
+    CI_lower = res$lbound,
+    CI_upper = res$ubound
+  )
+}))
+print(quest_icc_df)
+
+```
+
+
+
+# Univariete Outliers (Day 1)
+
+
+
+```{r}
+
+# Assess the univariete outliers of the parameters using z scores
+data_day1_constrained_quadratic_prg_normalized <- data_day1_constrained_quadratic_prg %>%
+  select(subjID, rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold,phys_k) %>%
+  mutate(across(where(is.numeric), ~ as.numeric(scale(.))))
+
+```
+
+#### Z-Score method
+
+```{r}
+# Pivot data to long format
+var_order <- names(data_day1_constrained_quadratic_prg_normalized)[-1]
+
+df_long <- data_day1_constrained_quadratic_prg_normalized %>%
+  pivot_longer(
+    cols = -subjID,
+    names_to = "variable",
+    values_to = "zscore"
+  ) %>%
+  mutate(
+    variable = factor(variable, levels = var_order),
+    outlier = abs(zscore) > 3
+  )
+
+# Identify subjects who are outliers in any variable
+outlier_subjects <- df_long %>%
+  filter(outlier) %>%
+  pull(subjID) %>%
+  unique()
+
+# Split data for plotting layers
+df_other <- df_long %>% filter(!(subjID %in% outlier_subjects))
+df_highlight <- df_long %>% filter(subjID %in% outlier_subjects)
+
+# Assign colors to outlier subjects
+color_palette <- setNames(
+  RColorBrewer::brewer.pal(length(outlier_subjects), "Set1"),
+  outlier_subjects
+)
+
+# Build the plot
+outlier_plot_day1 <- ggplot() +
+  # Boxplots behind points
+  geom_boxplot(
+    data = df_long, 
+    aes(x = variable, y = zscore),
+    alpha = 0.2,
+    outlier.shape = NA  # hide default outlier dots
+  ) +
+  
+  # Cutoff lines
+  geom_hline(yintercept = c(-3, 3), color = "red", linetype = "dashed") +
+  
+  # Non-outlier subjects (black, smaller)
+  geom_point(data = df_other, aes(x = variable, y = zscore), 
+             color = "black", size = 2) +
+  
+   # Lines connecting outlier subjects
+  geom_line(data = df_highlight, 
+            aes(x = variable, y = zscore, group = subjID, color = subjID),
+            size = 1, alpha = 0.8) +
+  
+  # Outlier subjects (colored, bigger)
+  geom_point(data = df_highlight,
+             aes(x = variable, y = zscore, color = subjID),
+             size = 4) +
+  
+  # Color scale for outlier subjects
+  scale_color_manual(values = color_palette,
+                     name = "Outlier Subject ID") +
+  
+  # Theme
+  theme_minimal() +
+  labs(x = "Variable", y = "Z-score") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+outlier_plot_day1
+
+# Filter the rows with outliers
+rows_with_outliers <- data_day1_constrained_quadratic_prg_normalized %>%
+  filter(if_any(where(is.numeric), ~ abs(.) > 3))
+
+z_scores_out <- rows_with_outliers$subjID
+
+# Custom outlier filtration
+custom_outliers <- c("5df8d8d6b7b3306449876d43", "60e45a7bc4730383ee2fecb6","6140ef8d27499e70e8740918","60d9dfd4dcc09cf57dc92cb1","6643be675817fd2a43298a04")
+#custom_outliers <- c()
+
+# Excluding 60e45a7bc4730383ee2fecb6 removes gng_eps loading from f2, otherwise no single exclusion leads to a complete destruction of the FA structure
+
+# Get the df without those outliers
+data_day1_constrained_quadratic_prg_normalized_no_outliers <- data_day1_constrained_quadratic_prg_normalized %>%
+  # filter(!subjID %in% rows_with_outliers$subjID)
+  filter(!subjID %in% custom_outliers)
+
+# Factor analysis using factanal without the uni outliers
+fa_day1_constrained_quadratic_prg_normalized_no_outliers <- factanal(
+  data_day1_constrained_quadratic_prg_normalized_no_outliers[,-1],
+  factors = 2,
+  rotation = "varimax",
+  scores = "regression"
+)
+print(loadings(fa_day1_constrained_quadratic_prg_normalized_no_outliers),cutoff = 0)
+
+z_score_efa_pa <- fa(data_day1_constrained_quadratic_prg_normalized_no_outliers[,-1], fm="pa",nfactors = 2)
+print(z_score_efa_pa$loadings)
+
+#print(data_day1_constrained_quadratic_prg_normalized[,-1])
+```
+
+#### IQR Method
+
+```{r}
+
+#### Assess the univariete outliers of the parameters using IQR * 1.5 fences #####
+# Melt data to long format
+numeric_cols <- sapply(data_day1_constrained_quadratic_prg_normalized, is.numeric)
+df_long <- melt(data_day1_constrained_quadratic_prg_normalized, 
+                id.vars = "subjID", 
+                measure.vars = names(data_day1_constrained_quadratic_prg_normalized)[numeric_cols])
+
+# Compute IQR outliers for each variable
+thresholds_df <- df_long %>%
+  group_by(variable) %>%
+  summarise(
+    Q1 = quantile(value, 0.25),
+    Q3 = quantile(value, 0.75),
+    IQR = Q3 - Q1,
+    lower = Q1 - 1.5 * IQR,
+    upper = Q3 + 1.5 * IQR
+  ) %>%
+  ungroup()
+
+outliers_df <- df_long %>%
+  group_by(variable) %>%
+  mutate(
+    Q1 = quantile(value, 0.25),
+    Q3 = quantile(value, 0.75),
+    IQR = Q3 - Q1,
+    lower = Q1 - 1.5 * IQR,
+    upper = Q3 + 1.5 * IQR,
+    is_outlier = value < lower | value > upper
+  ) %>%
+  ungroup()
+
+# Identify all subjects who are outliers in any variable
+iqr_outliers_ids <- unique(outliers_df$subjID[outliers_df$is_outlier])
+
+# Split data: outlier subjects vs others
+df_other <- df_long %>% filter(!(subjID %in% iqr_outliers_ids))
+df_highlight <- df_long %>% filter(subjID %in% iqr_outliers_ids)
+
+# Assign colors to lines for outlier subjects
+color_palette <- setNames(
+  colorRampPalette(brewer.pal(9, "Set1"))(length(iqr_outliers_ids)),
+  iqr_outliers_ids
+)
+
+# Build the plot
+out_iqr_day1 <- ggplot() +
+  # Boxplots behind everything
+  geom_boxplot(
+    data = df_long,
+    aes(x = variable, y = value),
+    alpha = 0.2,
+    outlier.shape = NA
+  ) +
+  
+  # Red lines for IQR thresholds
+  geom_segment(data = thresholds_df,
+               aes(x = as.numeric(factor(variable)) - 0.4, 
+                   xend = as.numeric(factor(variable)) + 0.4,
+                   y = lower, yend = lower),
+               color = "red", linetype = "dashed") +
+  geom_segment(data = thresholds_df,
+               aes(x = as.numeric(factor(variable)) - 0.4, 
+                   xend = as.numeric(factor(variable)) + 0.4,
+                   y = upper, yend = upper),
+               color = "red", linetype = "dashed") +
+  
+  # Non-outlier subjects (black points)
+  geom_point(data = df_other, aes(x = variable, y = value),
+             color = "black", size = 2) +
+  
+  # Lines connecting outlier subjects across variables
+  geom_line(data = df_highlight,
+            aes(x = variable, y = value, group = subjID, color = subjID),
+            size = 0.7, alpha = 0.8) +
+  
+  # Points for the outlier subjects
+  geom_point(data = df_highlight,
+             aes(x = variable, y = value, color = subjID),
+             size = 3) +
+  
+  # Color scale for outlier subjects
+  scale_color_manual(values = color_palette,
+                     name = "Outlier Subject ID") +
+  
+  theme_bw() +
+  labs(x = "Variable", y = "Value") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+out_iqr_day1
+
+
+# Get the df without those outliers
+data_day1_constrained_quadratic_prg_normalized_no_outliers_IQR <- data_day1_constrained_quadratic_prg_normalized %>%
+  filter(!subjID %in% iqr_outliers_ids)
+
+# Factor analysis using factanal without the uni outliers
+fa_day1_constrained_quadratic_prg_normalized_no_outliers_IQR <- factanal(
+  data_day1_constrained_quadratic_prg_normalized_no_outliers_IQR[,-1],
+  factors = 2,
+  rotation = "varimax",
+  scores = "regression"
+)
+print(loadings(fa_day1_constrained_quadratic_prg_normalized_no_outliers_IQR), cutoff=0)
+
+# print(fa_day1_constrained_quadratic_prg,nfactors=2)
+
+IQR_no_out_efa_pa <- fa(data_day1_constrained_quadratic_prg_normalized_no_outliers_IQR[,-1], nfactors=2, rotate="varimax",fm="pa")
+IQR_no_out_efa_pa$loadings
+
+# # Try the factor analysis with the outliers
+# fa_day1_constrained_quadratic_prg_with_uni_outliers <- factanal(
+#   data_day1_constrained_quadratic_prg_normalized[,-1],
+#   factors = 2,
+#   rotation = "varimax",
+#   scores = "regression"
+# )
+# 
+# print(fa_day1_constrained_quadratic_prg_with_uni_outliers)
+
+
+
+
+# Correlation matrix when excluding outliers
+data_day1_measures_no_outliers <- data_day1_measures %>%
+  filter(!subjID %in% rows_with_outliers$subjID)
+
+correlation_matrix_day1_constrained_quadratic_prg_no_outliers <- correlation(
+  data_day1_measures_no_outliers[,-1],
+  method = "spearman",
+  p_adjust = "none"
+)
+
+# Plot it
+correlation_matrix_day1_constrained_quadratic_prg_no_outliers %>%
+  summary(redundant = TRUE) %>%
+  plot()
+
+# Correlation matrix when excluding outliers IRQ
+data_day1_measures_no_outliers_IRQ <- data_day1_measures %>%
+  filter(!subjID %in% iqr_outliers_ids)
+
+correlation_matrix_day1_constrained_quadratic_prg_no_outliers_IRQ <- correlation(
+  data_day1_measures_no_outliers_IRQ[,-1],
+  method = "spearman",
+  p_adjust = "none"
+)
+
+# Plot it
+correlation_matrix_day1_constrained_quadratic_prg_no_outliers_IRQ %>%
+  summary(redundant = TRUE) %>%
+  plot()
+
+```
+
+
+
+
+### Skewness-adjusted boxplots
+
+Boxplots adjusted for skewed distributions as proposed in Hubert and Vandervieren (2008)
+
+```{r}
+
+adjbox(data_day1_constrained_quadratic_prg_normalized[,-1])
+
+# Prepare data
+data_values <- data_day1_constrained_quadratic_prg_normalized[,-1]
+subjIDs <- data_day1_constrained_quadratic_prg_normalized$subjID
+
+# Compute adjusted boxplot stats for each variable
+stats_list <- lapply(data_values, adjboxStats)
+names(stats_list) <- colnames(data_values)
+
+# Build a dataframe of boxplot stats + fences for ggplot
+boxplot_stats <- lapply(names(stats_list), function(var) {
+  s <- stats_list[[var]]
+  data_var <- data_values[[var]]
+  data.frame(
+    variable = var,
+    ymin = min(data_var[data_var >= s$fence[1]], na.rm = TRUE),  # lowest non-outlier
+    lower = s$stats[2],      # Q1
+    middle = s$stats[3],     # median
+    upper = s$stats[4],      # Q3
+    ymax = max(data_var[data_var <= s$fence[2]], na.rm = TRUE),   # highest non-outlier
+    lower_fence = s$fence[1],  # skew-adjusted lower fence
+    upper_fence = s$fence[2]   # skew-adjusted upper fence
+  )
+}) %>% bind_rows()
+
+# Create long dataframe for points and outlier labeling
+df_long <- data_values %>%
+  mutate(subjID = subjIDs) %>%
+  pivot_longer(cols = -subjID, names_to = "variable", values_to = "value") %>%
+  rowwise() %>%
+  mutate(
+    is_outlier = value %in% stats_list[[variable]]$out
+  ) %>%
+  ungroup()
+
+# Identify outlier subjects
+outlier_subjects <- df_long %>%
+  filter(is_outlier) %>%
+  pull(subjID) %>%
+  unique()
+
+# Assign darker colors to outlier subjects
+color_palette <- setNames(
+  colorRampPalette(RColorBrewer::brewer.pal(8, "Dark2"))(length(outlier_subjects)),
+  outlier_subjects
+)
+
+# Define variable order
+var_order <- c("rlwm_alpha", "gng_beta", "gng_eps", "foraging_exit_threshold", "phys_k")
+df_long$variable <- factor(df_long$variable, levels = var_order)
+boxplot_stats$variable <- factor(boxplot_stats$variable, levels = var_order)
+
+# Split data for plotting
+df_other <- df_long %>% filter(!(subjID %in% outlier_subjects))
+df_highlight <- df_long %>% filter(subjID %in% outlier_subjects)
+
+# Plot
+ggplot() +
+  # Boxplots
+  geom_boxplot(
+    data = boxplot_stats,
+    aes(
+      x = variable, 
+      ymin = ymin, lower = lower, middle = middle, upper = upper, ymax = ymax
+    ),
+    stat = "identity", fill = "lightgray", color = "black"
+  ) +
+  
+  # Add skewness-adjusted fences
+  geom_segment(
+    data = boxplot_stats,
+    aes(x = as.numeric(variable) - 0.4, xend = as.numeric(variable) + 0.4,
+        y = lower_fence, yend = lower_fence),
+    color = "red", linetype = "dashed"
+  ) +
+  geom_segment(
+    data = boxplot_stats,
+    aes(x = as.numeric(variable) - 0.4, xend = as.numeric(variable) + 0.4,
+        y = upper_fence, yend = upper_fence),
+    color = "red", linetype = "dashed"
+  ) +
+  
+  # Non-outlier points
+  geom_point(
+    data = df_other, 
+    aes(x = variable, y = value),
+    size = 2, color = "black"
+  ) +
+  
+  # Outlier subjects (points + connecting lines)
+  geom_line(
+    data = df_highlight,
+    aes(x = variable, y = value, group = subjID, color = subjID),
+    linewidth = 1
+  ) +
+  geom_point(
+    data = df_highlight,
+    aes(x = variable, y = value, color = subjID),
+    size = 3
+  ) +
+  
+  # Colors + theme
+  scale_color_manual(values = color_palette, name = "Outlier Subjects") +
+  scale_y_continuous(name = "Z score", limits = c(NA, 5)) +   # <-- added this
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "right"
+  )
+
+medcouple_outliers <- df_long %>%
+  filter(is_outlier) %>%
+  pull(subjID) %>%
+  unique()
+
+data_day1_no_medcouple_outliers <- data_day1_constrained_quadratic_prg_normalized %>%
+  filter(!subjID %in% medcouple_outliers)
+ 
+
+# Do the factor analysis without the medcouple outliers
+fa_day1_constrained_quadratic_prg_normalized_no_medcouple_outliers <- factanal(
+  data_day1_no_medcouple_outliers[,-1],
+  factors = 2,
+  rotation = "varimax",
+  scores = "regression"
+)
+print(loadings(fa_day1_constrained_quadratic_prg_normalized_no_medcouple_outliers),cutoff=0)
+
+no_medcouple_out_efa_pa <- fa(data_day1_no_medcouple_outliers[,-1], nfactors=2, fm="pa",rotate="varimax")
+no_medcouple_out_efa_pa$loadings
+```
+
+### Outliers of behavioural parameters
+
+```{r}
+
+# Prepare data
+data_day1_only_measures <- data_day1_measures %>%
+  select(subjID, gng_performance, rlwm_performance, foraging_exit_threshold, effort_accepted)
+
+var_order <- names(data_day1_only_measures)[-1]
+
+# Normalize (z-score)
+norm_data_day1_measures <- cbind(
+  subjID = data_day1_only_measures$subjID,
+  as.data.frame(scale(data_day1_only_measures[,-1]))
+)
+
+# Long format
+df_long_data1_measures <- norm_data_day1_measures %>%
+  pivot_longer(
+    cols = -subjID,
+    names_to = "variable",
+    values_to = "zscore"
+  ) %>%
+  mutate(
+    variable = factor(variable, levels = var_order),
+    outlier = abs(zscore) > 3
+  )
+
+# Identify subjects who are outliers in any variable
+outlier_subjects <- df_long_data1_measures %>%
+  filter(outlier) %>%
+  pull(subjID) %>%
+  unique()
+
+# Split data for plotting
+df_other <- df_long_data1_measures %>% filter(!(subjID %in% outlier_subjects))
+df_highlight <- df_long_data1_measures %>% filter(subjID %in% outlier_subjects)
+
+# Assign colors to outlier subjects dynamically
+color_palette <- setNames(
+  colorRampPalette(brewer.pal(9, "Set1"))(length(outlier_subjects)),
+  outlier_subjects
+)
+
+# Build the plot
+outlier_plot_day1_measures <- ggplot() +
+  # Boxplots
+  geom_boxplot(
+    data = df_long_data1_measures,
+    aes(x = variable, y = zscore),
+    alpha = 0.2,
+    outlier.shape = NA
+  ) +
+  
+  # Cutoff lines
+  geom_hline(yintercept = c(-3, 3), color = "red", linetype = "dashed") +
+  
+  # Non-outlier subjects (black points)
+  geom_point(data = df_other, aes(x = variable, y = zscore),
+             color = "black", size = 2) +
+  
+  # Lines connecting outlier subjects
+  geom_line(data = df_highlight,
+            aes(x = variable, y = zscore, group = subjID, color = subjID),
+            size = 1, alpha = 0.8) +
+  
+  # Outlier points (colored)
+  geom_point(data = df_highlight,
+             aes(x = variable, y = zscore, color = subjID),
+             size = 4) +
+  
+  # Color scale for outlier subjects
+  scale_color_manual(values = color_palette,
+                     name = "Outlier Subject ID") +
+  
+  # Theme and labels
+  theme_minimal() +
+  labs(x = "Variable", y = "Z-score") +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "right"
+  )
+
+outlier_plot_day1_measures
+
+# Pull the behavioural outliers 
+behavioural_outliers_day1 <- df_long_data1_measures %>%
+  filter(outlier == TRUE) %>%
+  select(subjID) %>%
+  pull()
+
+# 7 in total using the z score method
+behavioural_outliers_day1
+
+# How many of those behavioural outliers are also included in the parameters outliers
+
+# 2 out of 5 are also present in the z score parameter outlier detection 
+intersect(behavioural_outliers_day1, z_scores_out)
+```
+
+# Multivariete outliers (Day 1)
+
+```{r}
+# Assess the multivariete outliers of the params using Mahalanobis distance
+# Compute mean vector and covariance matrix
+mu <- colMeans(data_day1_constrained_quadratic_prg_normalized[,-1], na.rm = TRUE)
+cov_mat <- cov(data_day1_constrained_quadratic_prg_normalized[,-1], use = "complete.obs")
+
+# Compute Mahalanobis distance for each row
+# Source: https://builtin.com/data-science/mahalanobis-distance
+md <- mahalanobis(data_day1_constrained_quadratic_prg_normalized[,-1], center = mu, cov = cov_mat)
+cutoff <- qchisq(0.95, df = ncol(data_day1_constrained_quadratic_prg_normalized[,-1]))  # p < .05 threshold
+
+
+# Flag potential multivariate outliers
+outliers <- which(md > cutoff)
+
+
+# Add results back to dataframe
+df_plot <- data_day1_constrained_quadratic_prg_normalized
+df_plot$mahal_dist <- md
+df_plot$outlier <- md > cutoff
+
+# Boxplot with jittered points
+multi_out_plot_day1 <- ggplot(df_plot, aes(x = "Participant", y = mahal_dist)) +
+  geom_boxplot(outlier.shape = NA, fill = "lightgray", color = "black") +
+  geom_jitter(aes(color = outlier), width = 0.15, size = 2) +
+  geom_hline(yintercept = cutoff, color = "red", linetype = "dashed") +
+  # geom_text(
+  #   data = subset(df_plot, outlier),
+  #   aes(label = subjID),
+  #   color = "red", vjust = -0.5, size = 3,
+  #   position = position_jitter(width=0.3,height = 0.5)
+  # ) +
+  scale_color_manual(values = c("black", "red")) +
+  theme_bw() +
+  labs(
+    x = "",
+    y = "Mahalanobis Distance",
+    title = ""
+  )
+print(multi_out_plot_day1)
+
+mahalanobis_out <- df_plot$subjID[df_plot$outlier]
+
+#DO Fa without mahalanobis outliers
+data_day1_constrained_quadratic_prg_normalized_no_mahalanobis_outliers <- data_day1_constrained_quadratic_prg_normalized %>%
+  filter(!subjID %in% mahalanobis_out)
+
+fa_day1_constrained_quadratic_prg_normalized_no_mahalanobis_outliers <- factanal(
+  data_day1_constrained_quadratic_prg_normalized_no_mahalanobis_outliers[,-1],
+  factors = 2,
+  rotation = "varimax",
+  scores = "regression"
+)
+
+print(fa_day1_constrained_quadratic_prg_normalized_no_mahalanobis_outliers)
+
+no_multivar_out_efa_pa <- fa(data_day1_constrained_quadratic_prg_normalized_no_mahalanobis_outliers[,-1], nfactors = 2, fm="pa",rotate = "varimax")
+no_multivar_out_efa_pa$loadings
+
+```
+
+
+# Univariete Outliers (Day 2)
+
+
+```{r}
+# Assess the univariete outliers of the parameters using z scores
+data_day2_constrained_quadratic_prg_normalized <- data_day2_constrained_quadratic_prg %>%
+  select(subjID, rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold,phys_k) %>%
+  mutate(across(where(is.numeric), ~ as.numeric(scale(.))))
+
+# Get column order (excluding subjID)
+var_order <- names(data_day2_constrained_quadratic_prg_normalized)[-1]
+
+df_long <- data_day2_constrained_quadratic_prg_normalized %>%
+  pivot_longer(
+    cols = -subjID,
+    names_to = "variable",
+    values_to = "zscore"
+  ) %>%
+  mutate(
+    variable = factor(variable, levels = var_order),
+    outlier = abs(zscore) > 3
+  )
+
+outlier_plot_day2 <- ggplot(df_long, aes(x = variable, y = zscore)) +
+  geom_hline(yintercept = c(-3, 3), color = "red", linetype = "dashed") +
+  geom_point(aes(color = outlier)) +
+  geom_text(
+    data = df_long %>% filter(outlier),
+    aes(label = subjID),
+    vjust = -0.5,
+    size = 3,
+    color = "red"
+  ) +
+  scale_color_manual(values = c("black", "red")) +
+  theme_minimal() +
+  labs(x = "Variable", y = "Z-score") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+# Filter the rows with outliers
+rows_with_outliers <- data_day2_constrained_quadratic_prg_normalized %>%
+  filter(if_any(where(is.numeric), ~ abs(.) > 3))
+
+# Custom outlier filtration
+#custom_outliers <- c()
+
+# Excluding 60e45a7bc4730383ee2fecb6 removes gng_eps loading from f2, otherwise no single exclusion leads to a complete destruction of the FA structure
+
+# Get the df without those outliers
+data_day2_constrained_quadratic_prg_normalized_no_outliers <- data_day2_constrained_quadratic_prg_normalized %>%
+  filter(!subjID %in% rows_with_outliers$subjID)
+  #filter(!subjID %in% custom_outliers)
+
+# Factor analysis using factanal without the uni outliers
+fa_day2_constrained_quadratic_prg_normalized_no_outliers <- factanal(
+  data_day2_constrained_quadratic_prg_normalized_no_outliers[,-1],
+  factors = 2,
+  rotation = "varimax",
+  scores = "regression"
+)
+
+print(fa_day2_constrained_quadratic_prg_normalized_no_outliers)
+
+# Try the factor analysis with the outliers
+fa_day2_constrained_quadratic_prg_with_uni_outliers <- factanal(
+  data_day2_constrained_quadratic_prg_normalized[,-1],
+  factors = 2,
+  rotation = "varimax",
+  scores = "regression"
+)
+
+print(fa_day2_constrained_quadratic_prg_with_uni_outliers)
+
+# Assess the multivariete outliers of the params using Mahalanobis distance
+# Compute mean vector and covariance matrix
+mu <- colMeans(data_day2_constrained_quadratic_prg_normalized[,-1], na.rm = TRUE)
+cov_mat <- cov(data_day2_constrained_quadratic_prg_normalized[,-1], use = "complete.obs")
+
+# Compute Mahalanobis distance for each row
+# Source: https://builtin.com/data-science/mahalanobis-distance
+md <- mahalanobis(data_day2_constrained_quadratic_prg_normalized[,-1], center = mu, cov = cov_mat)
+cutoff <- qchisq(0.95, df = ncol(data_day1_constrained_quadratic_prg_normalized[,-1]))  # p < .05 threshold
+
+
+# Flag potential multivariate outliers
+outliers <- which(md > cutoff)
+
+multi_out_plot_day2 <- ggplot(data_day2_constrained_quadratic_prg, aes(x = 1:nrow(data_day2_constrained_quadratic_prg), y = md)) +
+  geom_point() +
+  geom_hline(yintercept = cutoff, color = "red", linetype = "dashed") +
+  labs(y = "Mahalanobis Distance", x = "Observation")
+
+
+```
+# Demographic effects (day 1)
+
+
+```{r}
+# Load the demographic data demographic_df_day1
+demo_data <- read.csv('../output/session0/demographics.csv')
+
+# Filter only the participants that are also present in the data
+demo_day1 <- demo_data %>%
+  filter(Participant.id %in% data_day1_constrained_quadratic_prg$subjID) %>%
+  rename("subjID" = "Participant.id") %>%
+  select(subjID, Age, Sex)
+
+# Get the demo data for day 2 as well
+demo_day2 <- demo_data %>%
+  filter(Participant.id %in% data_day2_constrained_quadratic_prg$subjID) %>%
+  rename("subjID" = "Participant.id") %>%
+  select(subjID, Age, Sex)
+
+# Get the df with questionnaires subjID and questionnaires only
+day1_prg_quests_only <- data_day1_constrained_quadratic_prg_quests %>%
+  select(subjID, factor1, factor2, factor1_pa,factor2_pa,behavioral_activation, social_motivation, emotional_sensitivity, Score_ASRM, Score_CESD, Score_SHPS, Score_PSS, BIS, BAS_Drive, BAS_Fun, BAS_Reward)
+
+# Add Age, Sex to the df with questionnaires 
+day1_prg_quests_and_demo <- merge(
+  day1_prg_quests_only,
+  demo_day1,
+  by = "subjID",
+  all.x = TRUE
+)
+
+# Exclude 6712264b956f8f9b305ee14b because of missing data Sex
+day1_prg_quests_and_demo <- day1_prg_quests_and_demo %>%
+  filter(subjID != "6712264b956f8f9b305ee14b")
+
+day1_prg_quests_and_demo$Age <- as.numeric(day1_prg_quests_and_demo$Age)
+# Run regression analyses for each questionnaire to see the effects of age and sex on the score,
+model_BA <- lm(behavioral_activation ~ Age + Sex + factor1_pa + factor2_pa, day1_prg_quests_and_demo)
+summary(model_BA)
+
+model_BA_only_f2 <- lm(behavioral_activation ~ Age + Sex + factor2, day1_prg_quests_and_demo)
+summary(model_BA_only_f2)
+
+model_ES <- lm(emotional_sensitivity ~ Age + Sex + factor1 + factor2, day1_prg_quests_and_demo)
+summary(model_ES)
+
+model_SM <- lm(social_motivation ~ Age + Sex + factor1 + factor2, day1_prg_quests_and_demo)
+summary(model_SM)
+
+model_ASRM <- lm(Score_ASRM ~ Age + Sex + factor1_pa + factor2_pa, day1_prg_quests_and_demo)
+summary(model_ASRM)
+
+model_ASRM_only_F2 <- lm(Score_ASRM ~ Age + Sex + factor2_pa, day1_prg_quests_and_demo)
+summary(model_ASRM_only_F2)
+
+model_CESD <- lm(Score_CESD ~ Age + Sex + factor1_pa + factor2_pa, day1_prg_quests_and_demo)
+summary(model_CESD)
+
+model_SHPS <- lm(Score_SHPS ~ Age + Sex + factor1 + factor2, day1_prg_quests_and_demo)
+summary(model_SHPS)
+
+model_PSS <- lm(Score_PSS ~ Age + Sex + factor1 + factor2, day1_prg_quests_and_demo)
+summary(model_PSS)
+
+model_BIS <- lm(BIS ~ Age + Sex + factor1 + factor2, day1_prg_quests_and_demo)
+summary(model_BIS)
+
+model_BAS_Drive <- lm(BAS_Drive ~ Age + Sex + factor1 + factor2, day1_prg_quests_and_demo)
+summary(model_BAS_Drive)
+
+model_BAS_Fun <- lm(BAS_Fun ~ Age + Sex + factor1 + factor2, day1_prg_quests_and_demo)
+summary(model_BAS_Fun)
+
+model_BAS_Fun_only_F2 <- lm(BAS_Fun ~ Age + Sex + factor2, day1_prg_quests_and_demo)
+summary(model_BAS_Fun_only_F2)
+
+model_BAS_Reward <- lm(BAS_Reward ~ Age + Sex + factor1 + factor2, day1_prg_quests_and_demo)
+summary(model_BAS_Reward)
+
+
+# Get df with subjID, factor1 and factor2, sex from the questionnaire df and run a multiple regression analyses predicting questionnaire scores by RL * sex + Vigor * sex
+PSS_by_sex <- lm(Score_PSS ~ factor1:Sex + factor2:Sex, day1_prg_quests_and_demo)
+summary(PSS_by_sex)
+
+CESD_by_sex <- lm(Score_CESD ~ factor1:Sex + factor2:Sex, day1_prg_quests_and_demo)
+summary(CESD_by_sex)
+
+```
+
+# Correlation of the subjective ratings
+
+```{r}
+# Load the subjective ratings for each task
+tasks <- c("foraging","gng","rlwm","effort")
+debrief_df <- data.frame(matrix(ncol = 0, nrow = nrow(data_day1_constrained_quadratic_prg_quests)))
+this_task <- data.frame()
+
+for (task in tasks) {
+  #browser()
+  this_task <- read.csv(paste0("../output/session1/",task,"/debrief.csv"))
+  this_task <- this_task %>%
+    select(-clarityRate) %>%
+    rename_with(~ paste0(task, "_difficulty"), difficultyRate) %>%
+    rename_with(~ paste0(task, "_fun"), funRate) #%>%
+    # rename_with(~ paste0(task, "_clarity"), clarityRate)
+
+  
+  debrief_df <- cbind(debrief_df, this_task)
+}
+
+debrief_df_full <- cbind(data_day1_constrained_quadratic_prg_quests, debrief_df)
+
+# Let's check the correlation
+corr_data_subj_ratings_day1 <- correlation(debrief_df_full,method="spearman",p_adjust = "none")
+
+corr_plot_subj_rating <- corr_data_subj_ratings_day1 %>%
+  summary(redundant = TRUE) %>%
+  plot() +
+ theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"   # this goes **inside theme**, not element_text
+  )
+
+print(corr_plot_subj_rating)
+
+```
+
+# Attention checks (Day 1)
+
+```{r}
+## Load catch trials from all the tasks
+foraging_catch <- read.csv("../output/session1/foraging_catch_trials.csv")
+gng_catch <- read.csv("../output/session1/gng_catch_trials.csv")
+rlwm_catch <- read.csv("../output/session1/rlwm_catch_trials.csv")
+effort_catch <- read.csv("../output/session1/effort_catch_trials.csv")
+
+# Questionnaires catch trials
+quest_catch <- read.csv("../output/session1/quests_catch_trials.csv")
+
+# helper: reshape each df to wide format
+reshape_task <- function(df, taskname) {
+  df %>%
+    group_by(subjID) %>%
+    mutate(trial_num = row_number()) %>%       # number catch trials per subject
+    select(subjID, trial_num, correct) %>%
+    pivot_wider(names_from = trial_num, 
+                values_from = correct, 
+                names_prefix = paste0(taskname, "_"))
+}
+
+effort_wide    <- reshape_task(effort_catch,    "effort")
+rlwm_wide      <- reshape_task(rlwm_catch,      "rlwm")
+gng_wide       <- reshape_task(gng_catch,       "gng")
+foraging_wide  <- reshape_task(foraging_catch,  "foraging")
+
+# merge all together by subjID
+catch_tasks_df <- effort_wide %>%
+  full_join(rlwm_wide, by = "subjID") %>%
+  full_join(gng_wide, by = "subjID") %>%
+  full_join(foraging_wide, by = "subjID")
+
+catch_quests_tasks_df <- merge(
+  catch_tasks_df,
+  quest_catch,
+  by = "subjID"
+)
+
+
+catch_quests_tasks_df <- catch_quests_tasks_df %>%
+  mutate(across(-subjID, ~ as.logical(.))) %>%   # convert everything except subjID to TRUE/FALSE
+  rowwise() %>%
+  mutate(
+    failed_total = sum(c_across(-subjID) == FALSE, na.rm = TRUE)
+  ) %>%
+  ungroup()
+```
+
+# Attention checks (Day 2)
+
+```{r}
+## Load catch trials from all the tasks
+foraging_catch_day2 <- read.csv("../output/session2/foraging_catch_trials.csv")
+gng_catch_day2 <- read.csv("../output/session2/gng_catch_trials.csv")
+rlwm_catch_day2 <- read.csv("../output/session2/rlwm_catch_trials.csv")
+effort_catch_day2 <- read.csv("../output/session2/effort_catch_trials.csv")
+
+# Questionnaires catch trials
+quest_catch_day2 <- read.csv("../output/session2/quests_catch_trials.csv")
+
+
+effort_wide_day2    <- reshape_task(effort_catch_day2,    "effort")
+rlwm_wide_day2      <- reshape_task(rlwm_catch_day2,      "rlwm")
+gng_wide_day2       <- reshape_task(gng_catch_day2,       "gng")
+foraging_wide_day2  <- reshape_task(foraging_catch_day2,  "foraging")
+
+# merge all together by subjID
+catch_tasks_df_day2 <- effort_wide_day2 %>%
+  full_join(rlwm_wide_day2, by = "subjID") %>%
+  full_join(gng_wide_day2, by = "subjID") %>%
+  full_join(foraging_wide_day2, by = "subjID")
+
+catch_quests_tasks_df_day2 <- merge(
+  catch_tasks_df_day2,
+  quest_catch_day2,
+  by = "subjID"
+)
+
+
+catch_quests_tasks_df_day2 <- catch_quests_tasks_df_day2 %>%
+  mutate(across(-subjID, ~ as.logical(.))) %>%   # convert everything except subjID to TRUE/FALSE
+  rowwise() %>%
+  mutate(
+    failed_total = sum(c_across(-subjID) == FALSE, na.rm = TRUE)
+  ) %>%
+  ungroup()
+```
+

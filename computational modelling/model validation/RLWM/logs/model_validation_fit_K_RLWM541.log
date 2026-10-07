@@ -1,0 +1,227 @@
+Starting parallel pool (parpool) using the 'local' profile ...
+[Warning: The Cluster reported an error while destroying a job. The error was:
+Could not open file
+"/home/x_stewe/.matlab/local_cluster_jobs/R2024a/Job64.in.mat", the error
+returned was: Unable to find file or directory
+'/home/x_stewe/.matlab/local_cluster_jobs/R2024a/Job64.in.mat'...] 
+[> In parallel.internal.cluster.CJSJobMethods.destroyOneJob (line 79)
+In parallel.job.CJSCommunicatingJob>@(job)CJSJobMethods.destroyOneJob(job.Parent,job,job.Support,job.SupportID) (line 114)
+In parallel.job/CJSCommunicatingJob/destroyJob (line 114)
+In parallel.Job>iDeleteJobs (line 1662)
+In parallel.internal.cluster.hetfun (line 57)
+In parallel/Job/delete (line 1458)
+In parallel/Cluster/hDeleteOneJob (line 1043)
+In parallel.internal.pool.AbstractInteractiveClient>iDeleteJobs (line 304)
+In parallel.internal.pool/AbstractInteractiveClient/pRemoveOldJobs (line 192)
+In parallel.internal.pool/AbstractInteractiveClient/start (line 81)
+In parallel.internal.pool.AbstractClusterPool>iStartClient (line 797)
+In parallel.internal.pool.AbstractClusterPool.hBuildPool (line 623)
+In parallel.internal.pool.doParpool (line 22)
+In parpool (line 118)
+In model_validation_fit_K_RLWM (line 2)] 
+Connected to parallel pool with 16 workers.
+START: 2026-06-18 11:19:44
+Subject 541, Model original_model_rlwm, K = 1, Iteration 3
+Subject 541, Model original_model_rlwm, K = 1, Iteration 11
+Iteration time (s): 0.27487
+Subject 541, Model original_model_rlwm, K = 1, Iteration 5
+Subject 541, Model original_model_rlwm, K = 1, Iteration 16
+Subject 541, Model original_model_rlwm, K = 1, Iteration 9
+Subject 541, Model original_model_rlwm, K = 1, Iteration 1
+Subject 541, Model original_model_rlwm, K = 1, Iteration 6
+Subject 541, Model original_model_rlwm, K = 1, Iteration 2
+Subject 541, Model original_model_rlwm, K = 1, Iteration 12
+Subject 541, Model original_model_rlwm, K = 1, Iteration 8
+Subject 541, Model original_model_rlwm, K = 1, Iteration 14
+Subject 541, Model original_model_rlwm, K = 1, Iteration 7
+Subject 541, Model original_model_rlwm, K = 1, Iteration 15
+Subject 541, Model original_model_rlwm, K = 1, Iteration 10
+Subject 541, Model original_model_rlwm, K = 1, Iteration 4
+Subject 541, Model original_model_rlwm, K = 1, Iteration 13
+Iteration time (s): 0.36273
+Iteration time (s): 0.56819
+Iteration time (s): 0.47951
+Iteration time (s): 0.47924
+Iteration time (s): 0.55821
+Iteration time (s): 0.53855
+Subject 541, Model original_model_rlwm, K = 1, Iteration 19
+Iteration time (s): 0.59481
+Iteration time (s): 0.5951
+Subject 541, Model original_model_rlwm, K = 1, Iteration 17
+Iteration time (s): 0.5745
+Iteration time (s): 0.6065
+Iteration time (s): 0.62684
+Iteration time (s): 0.67672
+Iteration time (s): 0.6276
+Iteration time (s): 0.60471
+Iteration time (s): 0.3135
+Subject 541, Model original_model_rlwm, K = 1, Iteration 18
+Iteration time (s): 0.69522
+Subject 541, Model original_model_rlwm, K = 1, Iteration 20
+Iteration time (s): 0.43628
+Iteration time (s): 0.3355
+Iteration time (s): 0.37813
+Subject 541, Model original_model_rlwm, K = 2, Iteration 3
+Subject 541, Model original_model_rlwm, K = 2, Iteration 11
+Subject 541, Model original_model_rlwm, K = 2, Iteration 5
+Subject 541, Model original_model_rlwm, K = 2, Iteration 16
+Subject 541, Model original_model_rlwm, K = 2, Iteration 9
+Subject 541, Model original_model_rlwm, K = 2, Iteration 1
+Subject 541, Model original_model_rlwm, K = 2, Iteration 6
+Subject 541, Model original_model_rlwm, K = 2, Iteration 2
+Subject 541, Model original_model_rlwm, K = 2, Iteration 12
+Subject 541, Model original_model_rlwm, K = 2, Iteration 8
+Subject 541, Model original_model_rlwm, K = 2, Iteration 14
+Subject 541, Model original_model_rlwm, K = 2, Iteration 7
+Iteration time (s): 0.12677
+Subject 541, Model original_model_rlwm, K = 2, Iteration 15
+Subject 541, Model original_model_rlwm, K = 2, Iteration 10
+Subject 541, Model original_model_rlwm, K = 2, Iteration 4
+Subject 541, Model original_model_rlwm, K = 2, Iteration 13
+Iteration time (s): 0.23644
+Iteration time (s): 0.26985
+Iteration time (s): 0.32734
+Iteration time (s): 0.32607
+Iteration time (s): 0.29616
+Subject 541, Model original_model_rlwm, K = 2, Iteration 19
+Iteration time (s): 0.15347
+Iteration time (s): 0.36967
+Subject 541, Model original_model_rlwm, K = 2, Iteration 17
+Iteration time (s): 0.38266
+Subject 541, Model original_model_rlwm, K = 2, Iteration 18
+Iteration time (s): 0.39953
+Iteration time (s): 0.34377
+Iteration time (s): 0.37164
+Iteration time (s): 0.44791
+Iteration time (s): 0.4706
+Iteration time (s): 0.44445
+Iteration time (s): 0.47252
+Iteration time (s): 0.44849
+Subject 541, Model original_model_rlwm, K = 2, Iteration 20
+Iteration time (s): 0.32007
+Iteration time (s): 0.2801
+Iteration time (s): 0.39946
+Subject 541, Model original_model_rlwm, K = 3, Iteration 3
+Subject 541, Model original_model_rlwm, K = 3, Iteration 11
+Subject 541, Model original_model_rlwm, K = 3, Iteration 5
+Subject 541, Model original_model_rlwm, K = 3, Iteration 16
+Subject 541, Model original_model_rlwm, K = 3, Iteration 9
+Iteration time (s): 0.094311
+Subject 541, Model original_model_rlwm, K = 3, Iteration 1
+Subject 541, Model original_model_rlwm, K = 3, Iteration 6
+Subject 541, Model original_model_rlwm, K = 3, Iteration 2
+Subject 541, Model original_model_rlwm, K = 3, Iteration 12
+Subject 541, Model original_model_rlwm, K = 3, Iteration 8
+Subject 541, Model original_model_rlwm, K = 3, Iteration 14
+Subject 541, Model original_model_rlwm, K = 3, Iteration 7
+Subject 541, Model original_model_rlwm, K = 3, Iteration 15
+Iteration time (s): 0.1472
+Subject 541, Model original_model_rlwm, K = 3, Iteration 10
+Subject 541, Model original_model_rlwm, K = 3, Iteration 4
+Subject 541, Model original_model_rlwm, K = 3, Iteration 13
+Iteration time (s): 0.33233
+Iteration time (s): 0.36346
+Iteration time (s): 0.34826
+Iteration time (s): 0.35942
+Iteration time (s): 0.31735
+Iteration time (s): 0.26807
+Subject 541, Model original_model_rlwm, K = 3, Iteration 19
+Iteration time (s): 0.39153
+Iteration time (s): 0.38378
+Iteration time (s): 0.43007
+Iteration time (s): 0.4405
+Iteration time (s): 0.40054
+Iteration time (s): 0.40537
+Iteration time (s): 0.44408
+Iteration time (s): 0.43132
+Subject 541, Model original_model_rlwm, K = 3, Iteration 20
+Subject 541, Model original_model_rlwm, K = 3, Iteration 17
+Subject 541, Model original_model_rlwm, K = 3, Iteration 18
+Iteration time (s): 0.43257
+Iteration time (s): 0.42825
+Iteration time (s): 0.42019
+Iteration time (s): 0.36586
+Subject 541, Model original_model_rlwm, K = 4, Iteration 3
+Subject 541, Model original_model_rlwm, K = 4, Iteration 11
+Iteration time (s): 0.085872
+Subject 541, Model original_model_rlwm, K = 4, Iteration 5
+Subject 541, Model original_model_rlwm, K = 4, Iteration 16
+Subject 541, Model original_model_rlwm, K = 4, Iteration 9
+Subject 541, Model original_model_rlwm, K = 4, Iteration 1
+Subject 541, Model original_model_rlwm, K = 4, Iteration 6
+Subject 541, Model original_model_rlwm, K = 4, Iteration 2
+Subject 541, Model original_model_rlwm, K = 4, Iteration 12
+Subject 541, Model original_model_rlwm, K = 4, Iteration 8
+Subject 541, Model original_model_rlwm, K = 4, Iteration 14
+Subject 541, Model original_model_rlwm, K = 4, Iteration 7
+Subject 541, Model original_model_rlwm, K = 4, Iteration 15
+Subject 541, Model original_model_rlwm, K = 4, Iteration 10
+Subject 541, Model original_model_rlwm, K = 4, Iteration 4
+Iteration time (s): 0.096892
+Subject 541, Model original_model_rlwm, K = 4, Iteration 13
+Iteration time (s): 0.18286
+Iteration time (s): 0.25607
+Iteration time (s): 0.21029
+Iteration time (s): 0.26504
+Iteration time (s): 0.28739
+Iteration time (s): 0.19293
+Iteration time (s): 0.22346
+Iteration time (s): 0.26237
+Subject 541, Model original_model_rlwm, K = 4, Iteration 20
+Subject 541, Model original_model_rlwm, K = 4, Iteration 19
+Iteration time (s): 0.42413
+Iteration time (s): 0.39238
+Iteration time (s): 0.32599
+Iteration time (s): 0.34765
+Iteration time (s): 0.2308
+Subject 541, Model original_model_rlwm, K = 4, Iteration 17
+Iteration time (s): 0.43775
+Iteration time (s): 0.4375
+Iteration time (s): 0.43346
+Subject 541, Model original_model_rlwm, K = 4, Iteration 18
+Iteration time (s): 0.42897
+Iteration time (s): 0.28717
+Subject 541, Model original_model_rlwm, K = 5, Iteration 3
+Subject 541, Model original_model_rlwm, K = 5, Iteration 11
+Subject 541, Model original_model_rlwm, K = 5, Iteration 5
+Subject 541, Model original_model_rlwm, K = 5, Iteration 16
+Subject 541, Model original_model_rlwm, K = 5, Iteration 9
+Subject 541, Model original_model_rlwm, K = 5, Iteration 1
+Subject 541, Model original_model_rlwm, K = 5, Iteration 6
+Subject 541, Model original_model_rlwm, K = 5, Iteration 2
+Subject 541, Model original_model_rlwm, K = 5, Iteration 12
+Iteration time (s): 0.15304
+Subject 541, Model original_model_rlwm, K = 5, Iteration 8
+Subject 541, Model original_model_rlwm, K = 5, Iteration 14
+Subject 541, Model original_model_rlwm, K = 5, Iteration 7
+Subject 541, Model original_model_rlwm, K = 5, Iteration 15
+Subject 541, Model original_model_rlwm, K = 5, Iteration 10
+Subject 541, Model original_model_rlwm, K = 5, Iteration 4
+Subject 541, Model original_model_rlwm, K = 5, Iteration 13
+Iteration time (s): 0.30509
+Iteration time (s): 0.25225
+Iteration time (s): 0.42662
+Iteration time (s): 0.4473
+Iteration time (s): 0.37322
+Iteration time (s): 0.44385
+Iteration time (s): 0.37422
+Iteration time (s): 0.42661
+Iteration time (s): 0.44759
+Iteration time (s): 0.40161
+Iteration time (s): 0.35885
+Iteration time (s): 0.36286
+Subject 541, Model original_model_rlwm, K = 5, Iteration 20
+Iteration time (s): 0.34282
+Subject 541, Model original_model_rlwm, K = 5, Iteration 19
+Subject 541, Model original_model_rlwm, K = 5, Iteration 17
+Subject 541, Model original_model_rlwm, K = 5, Iteration 18
+Iteration time (s): 0.45048
+Iteration time (s): 0.45266
+Iteration time (s): 0.2008
+Iteration time (s): 0.43383
+Iteration time (s): 0.34519
+Iteration time (s): 0.32109
+Finished subject 541, model original_model_rlwm
+END:   2026-06-18 11:19:49
+Elapsed seconds: 5.2
+Parallel pool using the 'Processes' profile is shutting down.

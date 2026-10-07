@@ -1,0 +1,2002 @@
+---
+title: "SEM shorter battery"
+author: "Stepan Wenke"
+date: "2024-06-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load libraries
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(lavaan)
+library(lavaanPlot)
+library(effectsize)
+library(performance)
+library(broom)
+library(MVN)
+library(correlation)
+library(mice)
+library(semTools)
+```
+
+## Load and standardize the data
+
+```{r}
+script_dir <- dirname(rstudioapi::getActiveDocumentContext()$path)
+
+# if (getwd() != script_dir) {
+#   setwd(script_dir)
+# } else {
+#   message("The script_dir is the same as the current working directory.")
+# }
+
+if (normalizePath(getwd()) != normalizePath(script_dir)) {
+  setwd(script_dir)
+} else {
+  message("The script_dir is the same as the current working directory.")
+}
+
+
+modelling_path <- 'modelling_battery/pilot_retest'
+rt_anal <- FALSE
+
+# Load the df_1
+if (rt_anal == FALSE) {
+  # df_1_path <- "../df_1.csv"
+  df_1_path <- "df_1_with_id.csv"
+  new_beta_effort <- read.csv("physical_effort_params_retest_new_beta.csv")
+
+
+} else {
+  df_1_path <- "../df_1_rt.csv"
+}
+
+# df_1_non_ceiling_path <- paste(modelling_path, "/df_1_non-ceiling.csv", sep="") 
+# df_1_path_gng_reduced <- paste(modelling_path, "/df_1_gng_reduced.csv", sep="") # reduced params in GNG
+# # Choose either full dataset or ceiling participants
+
+
+# df_1 <- as.data.frame(read.csv(df_1_non_ceiling_path, row.names = 1))
+df_1 <- as.data.frame(read.csv(df_1_path))
+
+head(df_1)
+
+df_1 <- cbind(df_1, new_beta_effort)
+
+# df_1_last_year <- as.data.frame(read.csv("../last year/df_1.csv"))
+
+
+# df_1 <- df_1 %>%
+#   rename(frgng_exit = average_value)
+
+# Check if the "id" column exists and drop it if it does
+if ("id" %in% colnames(df_1)) {
+  df_1_with_id <- df_1
+  df_1 <- df_1 %>% select(-id)
+} else if ("X" %in% colnames(df_1)) {
+  # first column is x - remove
+  df_1$X <- NULL
+}
+
+if ("X" %in% colnames(df_1_last_year)) {
+  # first column is x - remove
+  df_1_last_year$X <- NULL
+}
+
+reduced_this_year <- df_1 %>%
+  select(foraging_exit_threshold, rlwm_alpha, gng_beta, gng_eps, phys_k)
+
+df_1_last_year <- df_1_last_year %>%
+  mutate(foraging_exit_threshold = average_value, gng_beta = gng_beta_rew, gng_eps = gng_eps_rew) %>%
+  select(foraging_exit_threshold, rlwm_alpha, gng_beta, gng_eps, phys_k)
+
+# Combine last year and this year into one df
+# last_and_this_df_1 <- rbind(reduced_this_year, df_1_last_year)
+last_and_this_df_1 <- df_1_last_year
+
+# reduced_df_1 <- df_1[,c(1,2,6,7,8,11,12,15)]
+```
+
+# Correlation of behavioural measures with the parameters
+```{r}
+# Load the proportion accepted from the day 1
+proportion_accepted <- read.csv("../../../pilot analyses/29-01-25/effort/participant_avg.csv")
+
+# Load the df_1 with id to choose only the relevant participants
+df_1_with_id <- read.csv("df_1_with_id.csv") 
+df_1_with_id <- df_1_with_id %>%
+  mutate(participant = subjID) %>%
+  select(-subjID) %>%
+  mutate(participant = str_remove(participant, "^output/"))
+
+head(df_1_with_id)
+  
+
+# Make a combined df with subjID, phys_k and proportion accepted
+combined_df <- merge(df_1_with_id, proportion_accepted, by = "participant")
+
+# Calculate the correlation between phys_k and proportion accepted
+
+head(combined_df)
+
+# Make a scatter plot of phys_k and prop and draw a line of best fit
+scatter_plot <- ggplot(combined_df, aes(x = phys_k, y = prop)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(title = "Scatter Plot of phys_k and proportion accepted",
+       x = "phys_k",
+       y = "proportion accepted") +
+  theme_minimal()
+
+# Calculate the correlation between phys_k and proportion accepted
+correlation <- cor(combined_df$phys_k, combined_df$prop, use = "complete.obs")
+print(paste("Correlation between phys_k and proportion accepted:", correlation))
+
+print(scatter_plot)
+
+```
+
+
+# Standardazing the data
+```{r}
+
+# Define the logit function (inverse of logistic sigmoid)
+logit <- function(x) {
+  log(x / (1 - x))
+}
+
+# Transform the variables back to their original values
+# reversed_df_1 <- df_1 %>%
+#   mutate(
+#     phys_k = logit(phys_k),
+#     rlwm_alpha = logit(rlwm_alpha),
+#     gng_beta = log(gng_beta),
+#     gng_eps = log(gng_eps)
+#   )
+# 
+# reduced_df_1 <- reversed_df_1
+
+# reversed_full_df_1 <- df_1 %>%
+#   mutate(
+#     phys_k = logit(phys_k),
+#     phys_beta = log(phys_beta + 1),
+#     phys_g = logit(phys_g),
+#     rlwm_alpha = logit(rlwm_alpha),
+#     rlwm_rho = logit(rlwm_rho),
+#     rlwm_bias = logit(rlwm_bias),
+#     rlwm_decay = logit(rlwm_decay),
+#     rlwm_lapse = logit(rlwm_lapse),
+#     gng_alpha = logit(gng_alpha),
+#     gng_eps = log(gng_eps),
+#     gng_lapse = logit(gng_lapse),
+#     gng_beta = log(gng_beta)
+#   )
+# 
+# df_1 <- reversed_full_df_1
+
+
+reduced_df_1 <- df_1 
+#reduced_df_1 <- last_and_this_df_1
+
+# Add a fixed constant to all variables to ensure the positive values
+# fixed_constant <- -min(reduced_df_1) + 1
+# reduced_df_1 <- reduced_df_1 %>%
+#   mutate(across(everything(), ~ . + fixed_constant))
+
+
+# z score normalization
+#standard_red_df_1 <- as.data.frame(scale(reduced_df_1))
+standard_red_df_1 <- as.data.frame((reduced_df_1))
+
+# sqrt_k <- sqrt(df_1$phys_k)
+# standard_red_df_1 <- standard_red_df_1 %>%
+#   mutate(sqrt_k = sqrt_k)
+
+
+#reduced_df_1 <- standard_red_df_1
+
+head(standard_red_df_1)
+```
+
+## Check prerequisities
+```{r fig.height=7, fig.width=15}
+standard_red_df_1 <- reduced_df_1
+
+# Try different transformations
+standard_red_df_1$sqrt_k <- sqrt(df_1$phys_k)
+
+standard_red_df_1$log_k <- log(df_1$phys_k)
+
+standard_red_df_1$exp_k <- exp(df_1$phys_k)
+
+standard_red_df_1$inv_k <- 1 / df_1$phys_k
+
+# also arcsine transform
+standard_red_df_1$asin_k <- asin(sqrt(df_1$phys_k))
+
+# Set up the layout for the plots
+par(mfrow = c(2, 4))  # Set up a 2x4 grid for plots
+
+# Generate histograms for each variable
+for (i in 1:ncol(standard_red_df_1)) {
+  hist(standard_red_df_1[, i], main = colnames(standard_red_df_1)[i], xlab = "")
+}
+
+# Generate QQ plot for each variable
+par(mfrow = c(2, 4))  # Set up a 2x4 grid for plots
+for (i in 1:ncol(standard_red_df_1)) {
+  qqnorm(standard_red_df_1[, i], main = colnames(standard_red_df_1)[i])
+  qqline(standard_red_df_1[, i])
+}
+
+# Perform Shapiro-Wilk test for each variable
+# shapiro_results <- lapply(names(standard_red_df_1), function(var_name) {
+#   x <- standard_red_df_1[[var_name]]
+#   result <- tidy(shapiro.test(x))
+#   result$p.value <- sprintf("%.3f", result$p.value)  # Format p-value to display three decimals
+#   result$variable <- var_name  # Add variable name to the result
+#   result <- result[c("variable", names(result)[-which(names(result) == "variable")])]  # Reorder columns
+#   return(result)
+# })
+# shapiro_results_df <- do.call(rbind, shapiro_results)
+# 
+# # View the tidier output
+# print(shapiro_results_df)
+
+
+
+# Reset to default single plot layout
+par(mfrow = c(1, 1))
+
+# Check the multivariete normality
+mvn_plot <- mvn(standard_red_df_1, mvnTest = "mardia", multivariatePlot = "qq")
+print(mvn_plot$multivariateNormality)
+print(mvn_plot$univariateNormality)
+
+# Generate the correlation matrix
+cor_matrix <- correlation(standard_red_df_1)
+cor_matrix %>%
+  summary(redundant = TRUE) %>%
+  plot()
+
+# Check outliers
+boxplot(standard_red_df_1)
+
+```
+## Replacing outliers with NA
+
+```{r}
+
+# Example function to identify and replace outliers with NA
+replace_outliers_with_na <- function(df) {
+  for (col in names(df)) {
+    Q1 <- quantile(df[[col]], 0.25, na.rm = TRUE)
+    Q3 <- quantile(df[[col]], 0.75, na.rm = TRUE)
+    IQR <- Q3 - Q1
+    lower_bound <- Q1 - 1.5 * IQR
+    upper_bound <- Q3 + 1.5 * IQR
+    df[[col]][df[[col]] < lower_bound | df[[col]] > upper_bound] <- NA
+  }
+  return(df)
+}
+
+# Replace outliers with NA
+no_out_reduced_df_1 <- replace_outliers_with_na(reduced_df_1)
+
+
+boxplot(no_out_reduced_df_1)
+
+# Multiple Imputation
+imputed_data <- mice(no_out_reduced_df_1, m = 5, method = 'pmm', seed = 500)
+
+# Create a complete data set from the imputed data
+imputed_reduced_df_1 <- complete(imputed_data)
+
+# Check the multivariete normality
+mvn_plot <- mvn(imputed_reduced_df_1, mvnTest = "mardia", multivariatePlot = "qq")
+print(mvn_plot$multivariateNormality)
+print(mvn_plot$univariateNormality)
+
+# replace the outlier data with the imputed data 
+#reduced_df_1 <- imputed_reduced_df_1
+
+
+par(mfrow = c(2, 4))
+# Generate histograms for each variable
+for (i in 1:ncol(reduced_df_1)) {
+  hist(reduced_df_1[, i], main = colnames(reduced_df_1)[i], xlab = "")
+}
+
+```
+
+
+# Two step transformation of k parameter
+
+```{r}
+# Example transformation for your k parameter
+transform_to_normal <- function(x) {
+  #browser()
+  
+  # Step 1: Convert to percentile rank
+  percentile_rank <- rank(x, ties.method = "average") / (length(x) + 1)
+  
+  # Step 2: Apply inverse-normal transformation
+  normal_transformed <- qnorm(percentile_rank)
+  
+  return(normal_transformed)
+}
+
+k_transformed <- transform_to_normal(reduced_df_1$phys_k)
+
+
+hist(k_transformed, main = "Transformed k parameter", xlab = "Transformed k")
+
+# Check normality
+shapiro.test(k_transformed)
+
+
+reduced_df_1$k_transformed <- k_transformed
+standard_red_df_1$phys_k_transformed <- k_transformed 
+
+
+```
+# Normality test for common tranformations
+```{r}
+# Function to calculate normality for a given variable and its transformations
+test_normality_for_transformations <- function(variable) {
+  # List of transformations to apply
+  transformations <- list(
+    log = log(variable),
+    exp = exp(variable),
+    reciprocal = 1 / variable,
+    sqrt = sqrt(variable)
+  )
+  
+  # Function to test normality for each transformation
+  normality_tests <- function(x, name) {
+    cat("\n--- Normality tests for", name, "---\n")
+    
+    # Shapiro-Wilk test (recommended for small samples)
+    shapiro_test <- tryCatch(shapiro.test(x), error = function(e) NULL)
+    if (!is.null(shapiro_test)) {
+      cat("Shapiro-Wilk p-value:", shapiro_test$p.value, "\n")
+    } else {
+      cat("Shapiro-Wilk test failed (possible Inf or NaN values)\n")
+    }
+    
+    # Kolmogorov-Smirnov test against normal distribution
+    ks_test <- ks.test(x, "pnorm", mean = mean(x), sd = sd(x))
+    cat("Kolmogorov-Smirnov p-value:", ks_test$p.value, "\n")
+    
+    # Histogram
+    hist(x, main = paste("Histogram of", name), col = "lightblue", border = "black", xlab = name)
+  }
+  
+  # Apply normality tests to each transformation
+  for (name in names(transformations)) {
+    normality_tests(transformations[[name]], name)
+  }
+}
+
+# Example: Replace `eps` with your variable of interest
+# eps <- your_variable_name_here
+# Test normality for the `eps` variable (or any other variable you want to analyze)
+
+test_normality_for_transformations(sem_reduced_df_2$gng_eps)
+
+
+```
+## Last normality check&fix
+```{r}
+if (rt_anal == TRUE) {
+  sem_reduced_df_1 <- reduced_df_1 %>% select(phys_k, rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold, k_transformed, phys_credits_rt)
+} else {
+  # sem_reduced_df_1 <- reduced_df_1 %>% select(phys_k, rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold, k_transformed)
+    sem_reduced_df_1 <- df_1 %>% select(new_k, rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold)
+}
+
+# sem_reduced_df_1 <- reduced_df_1 %>% select(phys_k, rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold, k_transformed, phys_credits_rt)
+
+# Make the non-normal normal
+sem_reduced_df_1$gng_eps <- log(sem_reduced_df_1$gng_eps)
+sem_reduced_df_1$rlwm_alpha <- log(sem_reduced_df_1$rlwm_alpha)
+sem_reduced_df_1$gng_beta <- log(sem_reduced_df_1$gng_beta)
+# sem_reduced_df_1$phys_credits_rt <- exp(sem_reduced_df_1$phys_credits_rt)
+
+
+# Check the multivariete normality
+mvn_plot <- mvn(sem_reduced_df_1, mvnTest = "mardia", multivariatePlot = "qq")
+print(mvn_plot$multivariateNormality)
+print(mvn_plot$univariateNormality)
+
+
+par(mfrow = c(2, 4))
+# Generate histograms for each variable
+for (i in 1:ncol(sem_reduced_df_1)) {
+  hist(sem_reduced_df_1[, i], main = colnames(sem_reduced_df_1)[i], xlab = "")
+}
+
+
+```
+```{r}
+# Replace only the transformed columns back into the original reduced_df_1
+reduced_df_1$gng_eps <- sem_reduced_df_1$gng_eps
+reduced_df_1$rlwm_alpha <- sem_reduced_df_1$rlwm_alpha
+reduced_df_1$gng_beta <- sem_reduced_df_1$gng_beta
+
+# Generate the correlation matrix
+cor_matrix <- correlation(reduced_df_1)
+cor_matrix %>%
+  summary(redundant = TRUE) %>%
+  plot()
+
+
+
+```
+
+## Demographic variables
+```{r}
+# Load the df_1 with id to choose only the relevant participants
+# df_1_with_id_path <- paste(modelling_path, "/df_1_with_id.csv", sep="")
+# df_1_with_id <- as.data.frame(read.csv(df_1_with_id_path, row.names = 1))
+# df_1_with_id <- df_1_with_id %>%
+#   rename(frgng_exit = average_value)
+# 
+# reduced_df_1_with_id <- df_1_with_id[,c(1,2,6,7,8,11,12,15)]
+# 
+# # Load the demographic variables from Prolific
+# raw_demo_data_day1_path <- paste(modelling_path, "/demo_data.csv", sep="")
+# raw_demo_data_day1 <- as.data.frame(read.csv(raw_demo_data_day1_path))
+# 
+# 
+# # Filter demo_data_day1 to keep only the rows where the ID is present in reduced_df_1_with_id
+# filtered_demo_data_day1 <- raw_demo_data_day1 %>%
+#   filter(Participant.id %in% reduced_df_1_with_id$id)
+# 
+# demo_data_day1 <- filtered_demo_data_day1 %>%
+#   dplyr::select(Participant.id, Time.taken, Age, Sex, Ethnicity.simplified)
+# 
+# demo_data_day1$Age <- as.numeric(demo_data_day1$Age)
+# 
+# # Rename the ID columns to the same name if they are different
+# names(demo_data_day1)[names(demo_data_day1) == "Participant.id"] <- "id"
+# 
+# # Merge the data frames based on the 'id' column
+# merged_data <- merge(demo_data_day1, df_1_with_id, by = "id")
+# 
+# # View the merged data frame
+# print(merged_data)
+
+
+```
+
+## Correlation of the composite scores
+```{r}
+# # Create composite scores for Vigor and RL
+# 
+# # Calculate the composite score for vigor
+# comp_reduced_df_1 <- reduced_df_1 %>%
+#   dplyr::mutate(vigor = rowMeans(dplyr::select(., frgng_exit, phys_k,gng_eps_rew, gng_eps_pun), na.rm = TRUE)) %>%
+#     dplyr::mutate(RL = rowMeans(dplyr::select(., rlwm_alpha, rlwm_rho, gng_alpha_rew, gng_alpha_pun, gng_eps_rew, gng_eps_pun), na.rm = TRUE)) %>%
+#    bind_cols(demo_data_day1) %>%
+#   dplyr::select(id, Time.taken, Age, Sex, Ethnicity.simplified, frgng_exit, rlwm_alpha, rlwm_rho, gng_alpha_rew, gng_alpha_pun, gng_eps_rew, gng_eps_pun, phys_k, vigor, RL)
+# 
+# # Create a new data frame with the composite scores
+# compos_df_1 <- comp_reduced_df_1 %>%
+#   dplyr::select(vigor, RL, Age)
+# 
+# # compos_df_1$vigor <- scale(compos_df_1$vigor)
+# # compos_df_1$RL <- scale(compos_df_1$RL)
+# 
+# # Correlation between averaged Vigor and RL
+# correlation <- cor(compos_df_1$vigor, compos_df_1$RL, use = "complete.obs")
+# 
+# # Print the correlation
+# print(paste("Correlation between Vigor and RL:", correlation))
+# 
+# # Create a scatter plot with a fitted line and SE using ggplot2
+# scatter_plot <- ggplot(compos_df_1, aes(x = vigor, y = RL)) +
+#   geom_point(aes(color = ifelse(Age > 33, "More than 33", "Less than or equal to 33"))) +
+#   geom_smooth(method = "lm", se = TRUE, color = "black") + # Fitting one line for the entire dataset
+#   labs(title = "Scatter Plot of Vigor vs RL",
+#        x = "Vigor",
+#        y = "RL") +
+#   theme_minimal()
+# print(scatter_plot)
+# 
+# 
+# ## Correlation of age with Vigor
+# cor_vigor_age <- cor(compos_df_1$vigor, compos_df_1$Age, use = "complete.obs")
+# 
+# # Print the correlation
+# print(paste("Correlation between Vigor and Age:", cor_vigor_age))
+# 
+# # Create a scatter plot with a fitted line and SE using ggplot2
+# scatter_plot <- ggplot(compos_df_1, aes(x = vigor, y = Age)) +
+#   geom_point(aes(color = ifelse(Age > 33, "More than 33", "Less than or equal to 33"))) +
+#   geom_smooth(method = "lm", se = TRUE) + # Adding the fitted line with SE
+#   labs(title = "Scatter Plot of Vigor vs Age",
+#        x = "Vigor",
+#        y = "Age") +
+#   theme_minimal()
+# print(scatter_plot)
+# 
+# ## Correlation of age with RL
+# cor_RL_age <- cor(compos_df_1$RL, compos_df_1$Age, use = "complete.obs")
+# 
+# # Print the correlation
+# print(paste("Correlation between RL and Age:", cor_RL_age))
+# 
+# # Create a scatter plot with a fitted line and SE using ggplot2
+# scatter_plot <- ggplot(compos_df_1, aes(x = RL, y = Age)) +
+#   geom_point(aes(color = ifelse(Age > 33, "More than 33", "Less than or equal to 33"))) +
+#   geom_smooth(method = "lm", se = TRUE) + # Adding the fitted line with SE
+#   labs(title = "Scatter Plot of Vigor vs Age",
+#        x = "RL",
+#        y = "Age") +
+#   theme_minimal()
+# print(scatter_plot)
+# 
+# ## Generate the correlation matrix
+# # Subset the df
+# age_params_df <- comp_reduced_df_1 %>%
+#   dplyr::select(-id, -Time.taken, -Sex, -Ethnicity.simplified, -vigor, -RL)
+# 
+# cor_matrix <- correlation(age_params_df)
+# cor_matrix %>%
+#   summary(redundant = TRUE) %>%
+#   plot()
+```
+
+
+
+## Get SEM for day 1
+```{r}
+# Export the dataset for STATA
+#write.csv(scale(reduced_df_1), "both_years_reduced_df_1.csv")
+if (rt_anal == FALSE) {
+  write.csv(scale(reduced_df_1), "reduced_df_1.csv")
+} else {
+  reduced_df_1 <- reduced_df_1 %>% select(phys_k, rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold, phys_k, k_transformed, phys_credits_rt)
+  write.csv(scale(reduced_df_1), "rt_reduced_df_1.csv")
+}
+
+# if (day == 1) {
+#   write.csv(scale(reduced_df_1), "rt_reduced_df_1.csv")
+# } else {
+#   write.csv(scale(reduced_df_1), "rt_reduced_df_2.csv")
+# }
+
+# Specify the measurement model for Day 1
+full_model_day1 <- '
+  # Define latent variables
+  Vigor =~ foraging_exit_threshold + phys_beta + k_transformed + phys_g
+  RL =~ rlwm_alpha + rlwm_bias + rlwm_decay + rlwm_lapse + rlwm_rho + 
+        gng_alpha + gng_beta + gng_lapse
+  
+  # Correlation between latent variables
+  Vigor ~~ RL
+'
+
+stripped_model_day1 <- '
+  # Define latent variables
+  Vigor =~ foraging_exit_threshold + k_transformed + gng_eps
+  RL =~ rlwm_alpha + rlwm_rho + gng_beta + gng_eps
+  
+  # Correlation between latent variables
+  Vigor ~~ RL
+'
+
+
+old_model_day1 <- '
+  # Define latent variables
+  Vigor =~ foraging_exit_threshold + k_transformed
+  RL =~ rlwm_alpha  + gng_alpha
+  
+  # Correlation between latent variables
+  Vigor ~~ RL
+'
+
+old_model_day2 <- '
+  # Define latent variables
+  Vigor =~ foraging_exit_threshold + k_transformed
+  RL =~ rlwm_alpha  + gng_alpha + gng_beta
+  
+  # Correlation between latent variables
+  Vigor ~~ RL
+'
+
+model_day1 <- '
+  # Define latent variables
+  Vigor =~ foraging_exit_threshold + k_transformed
+  RL =~ rlwm_alpha + gng_beta
+  
+  # Correlation between latent variables
+  Vigor ~~ RL
+'
+
+model_day1_eps <- '
+  # Define latent variables
+  Vigor =~ foraging_exit_threshold + new_k + gng_eps
+  RL =~ rlwm_alpha + gng_beta + gng_eps
+  
+  # Correlation between latent variables
+  Vigor ~~ RL
+'
+
+model_day2 <- '
+  # Define latent variables
+  Vigor =~ foraging_exit_threshold + k_transformed
+  RL =~ rlwm_alpha + rlwm_rho + gng_beta
+  
+  # Correlation between latent variables
+  Vigor ~~ RL
+'
+
+model_only_vigor <- '
+  # Define latent variables
+  Vigor =~ foraging_exit_threshold + k_transformed + gng_eps 
+
+'
+
+model_only_RL <- '
+  # Define latent variables
+  RL =~ rlwm_alpha + rlwm_rho + gng_beta + gng_eps
+
+  
+'
+
+model_day1_rt <- '
+  # Define latent variables
+  Vigor =~ foraging_exit_threshold + k_transformed + gng_eps + phys_credits_rt
+  RL =~ rlwm_alpha + gng_beta + gng_eps
+  
+  # Correlation between latent variables
+  Vigor ~~ RL
+'
+
+
+g_day1_rt <- '
+  # Define latent variables
+  G =~ foraging_exit_threshold + k_transformed + gng_eps + phys_credits_rt + rlwm_alpha + gng_beta + gng_eps
+  
+'
+
+fac3_day1_rt <- '
+  # Define latent variables
+  Vigor =~ foraging_exit_threshold + k_transformed + gng_eps + phys_credits_rt
+  RL =~ rlwm_alpha + gng_beta + gng_eps
+  Discounting =~ k_transformed
+  
+  # Correlation between latent variables
+  Vigor ~~ RL
+'
+
+RT_model_only_vigor <- '
+  # Define latent variables
+  Vigor =~ foraging_exit_threshold + k_transformed + gng_eps + phys_credits_rt
+
+'
+
+# 10-03 functioning models for day 1
+# model_only_RL and model_day1_eps
+
+
+# fit_day1 <- sem(model_day1, data = standard_red_df_1, estimator = "MLR")
+fit_day1 <- sem(model_day1_eps, data = scale(df_1), estimator = "ML")
+
+
+# Summarize the results for Day 1
+summary(fit_day1, standardized = TRUE, fit.measures = FALSE, rsquare = TRUE)
+
+# Plot the measurement model for Day 1
+lavaanPlot(fit_day1, coefs = TRUE, stand = FALSE, covs = TRUE, stars = c("latent","covs"),graph_options = list(rankdir = "TB"))
+
+# Investigate the goodness of fit
+interpret(fit_day1)
+
+# Print the residual matrix
+residuals(fit_day1, type="standardized")
+
+# Print the modification indices
+modindices(fit_day1)
+```
+# Misc models
+```{r}
+##########################################
+
+
+model_reduced_gng_all_params_day1 <- '
+
+  RL =~ rlwm_alpha + rlwm_rho + rlwm_bias + rlwm_decay + rlwm_lapse + gng_alpha + gng_beta + gng_eps + gng_lapse
+  Vigor =~ frgng_exit + phys_k + phys_beta + gng_eps
+
+  # Residual covariance between RL and Vigor at Day 1
+  RL ~~ Vigor
+'
+
+model_reduced_gng_reduced_params_day1 <- '
+
+  RL =~ rlwm_alpha + rlwm_rho   + gng_alpha + gng_eps
+  Vigor =~ frgng_exit + phys_k + gng_eps
+
+  # Residual covariance between RL and Vigor at Day 1
+  RL ~~ Vigor
+'
+model_day1 <- '
+  # Measurement model for RL at Day 1
+  RL =~ rlwm_alpha + rlwm_rho + gng_alpha_rew + gng_alpha_pun + gng_eps_rew #+ gng_eps_pun
+  
+  # Measurement model for Vigor at Day 1
+  Vigor =~ frgng_exit + phys_k + gng_eps_rew #+ gng_eps_pun
+
+  # Residual covariance  at Day 1
+  RL ~~ Vigor
+  
+  #rlwm_alpha	~~ rlwm_rho
+  #gng_alpha_rew	~~ gng_eps_rew
+  #gng_alpha_pun ~~ gng_eps_rew
+  #gng_alpha_pun ~~ gng_alpha_rew
+  #gng_alpha_pun ~~ gng_eps_pun
+  
+  
+  
+'
+
+common_fac_day_2 <- '
+  # Measurement model for RL at Day 1
+  RL =~ rlwm_alpha + rlwm_rho + gng_alpha_rew + gng_alpha_pun + gng_eps_rew + gng_eps_pun
+  
+  # Measurement model for Vigor at Day 1
+  Vigor =~ frgng_exit + phys_k + gng_eps_rew + gng_eps_pun
+
+  # Residual covariance  at Day 1
+  RL ~~ Vigor
+  
+  G =~  1*rlwm_alpha + 1*rlwm_rho + 1*gng_alpha_rew + 1*gng_alpha_pun + 1*gng_eps_rew + 1*gng_eps_pun + 1*frgng_exit + 1*phys_k
+  
+  #rlwm_alpha	~~ rlwm_rho
+  #gng_alpha_rew	~~ gng_eps_rew
+  #gng_alpha_pun ~~ gng_eps_rew
+  #gng_alpha_pun ~~ gng_alpha_rew
+  
+  
+'
+
+model_age_day1 <- '
+  # Measurement model for RL at Day 1
+  RL =~ rlwm_alpha + rlwm_rho + gng_alpha_rew + gng_alpha_pun + gng_eps_rew 
+  
+  # Measurement model for Vigor at Day 1
+  Vigor =~ frgng_exit + phys_k + gng_eps_rew 
+
+  # Residual covariance  at Day 1
+  RL ~~ Vigor
+  
+  RL ~ Age
+  Vigor ~ Age
+
+  
+  # rlwm_alpha	~~ rlwm_rho
+  # gng_alpha_rew	~~ gng_eps_rew
+  # gng_alpha_pun ~~ gng_eps_rew
+  # gng_alpha_pun ~~ gng_alpha_rew
+  # 
+
+'
+paralel_model <- '
+  # Measurement model for RL at Day 1
+  RL =~ rlwm_alpha + rlwm_rho + gng_alpha_rew + gng_alpha_pun + gng_eps_rew + gng_eps_pun
+  
+  # Measurement model for Vigor at Day 1
+  Vigor =~ frgng_exit + phys_k + gng_eps_rew + gng_eps_pun
+  
+  # Residual covariance  at Day 1
+  RL ~~ Vigor
+  
+  Foraging =~ frgng_exit
+  RLWM =~ r*rlwm_alpha + r*rlwm_rho
+  Effort =~ e*phys_k
+  GNG =~ g*gng_alpha_rew + g*gng_alpha_pun + g*gng_eps_rew + g*gng_eps_pun
+  
+'
+
+#
+# This model specification was automatically generated by Onyx
+#
+ onyx_day1<-"
+# regressions 
+   Vigor=~1.0*frgng_exit
+   Vigor=~1.0*phys_k
+   Vigor=~1.0*gng_eps_pun
+   Vigor=~1.0*gng_eps_rew
+   RL=~1.0*gng_eps_pun
+   RL=~1.0*gng_eps_rew
+   RL=~1.0*gng_alpha_pun
+   RL=~1.0*gng_alpha_rew
+   RL=~1.0*rlwm_rho
+   RL=~1.0*rlwm_alpha
+# residuals, variances and covariances
+   Vigor ~~ VAR_Vigor*Vigor
+   RL ~~ VAR_RL*RL
+   Vigor ~~ COV_Vigor_RL*RL
+   rlwm_alpha ~~ VAR_rlwm_alpha*rlwm_alpha
+   rlwm_rho ~~ VAR_rlwm_rho*rlwm_rho
+   phys_k ~~ VAR_phys_k*phys_k
+   gng_eps_pun ~~ VAR_gng_eps_pun*gng_eps_pun
+   gng_eps_rew ~~ VAR_gng_eps_rew*gng_eps_rew
+   gng_alpha_rew ~~ VAR_gng_alpha_rew*gng_alpha_rew
+   gng_alpha_pun ~~ VAR_gng_alpha_pun*gng_alpha_pun
+   frgng_exit ~~ VAR_frgng_exit*frgng_exit
+   #phys_k ~~ COV_phys_k_frgng_exit*frgng_exit
+   rlwm_alpha ~~ COV_rlwm_alpha_rlwm_rho*rlwm_rho
+   gng_alpha_rew ~~ COV_gng_alpha_rew_gng_alpha_pun*gng_alpha_pun
+   gng_eps_rew ~~ COV_gng_eps_rew_gng_alpha_rew*gng_alpha_rew
+   gng_eps_rew ~~ COV_gng_eps_rew_gng_alpha_pun*gng_alpha_pun
+   gng_eps_pun ~~ COV_gng_eps_pun_gng_alpha_rew*gng_alpha_rew
+   gng_eps_pun ~~ COV_gng_eps_pun_gng_alpha_pun*gng_alpha_pun
+   gng_eps_pun ~~ COV_gng_eps_pun_gng_eps_rew*gng_eps_rew
+# observed means
+   rlwm_alpha~1;
+   rlwm_rho~1;
+   phys_k~1;
+   gng_eps_pun~1;
+   gng_eps_rew~1;
+   gng_alpha_rew~1;
+   gng_alpha_pun~1;
+   frgng_exit~1;
+";
+ 
+onyx_day1_fixed <- "
+# Measurement model
+   Vigor =~ frgng_exit + phys_k + gng_eps_pun + gng_eps_rew
+   RL =~ rlwm_rho + gng_eps_pun + gng_eps_rew + gng_alpha_pun + gng_alpha_rew + rlwm_alpha
+
+# Residuals, variances, and covariances
+   Vigor ~~ VAR_Vigor*Vigor
+   RL ~~ VAR_RL*RL
+   Vigor ~~ COV_Vigor_RL*RL
+   phys_k ~~ VAR_phys_k*phys_k
+   gng_eps_pun ~~ VAR_gng_eps_pun*gng_eps_pun
+   gng_eps_rew ~~ VAR_gng_eps_rew*gng_eps_rew
+   gng_alpha_rew ~~ VAR_gng_alpha_rew*gng_alpha_rew
+   gng_alpha_pun ~~ VAR_gng_alpha_pun*gng_alpha_pun
+   frgng_exit ~~ VAR_frgng_exit*frgng_exit
+   rlwm_alpha ~~ VAR_rlwm_alpha*rlwm_alpha
+   rlwm_rho ~~ VAR_rlwm_rho*rlwm_rho
+
+# Observed means
+   # rlwm_alpha ~ 1
+   # rlwm_rho ~ 1
+   # phys_k ~ 1
+   # gng_eps_pun ~ 1
+   # gng_eps_rew ~ 1
+   # gng_alpha_rew ~ 1
+   # gng_alpha_pun ~ 1
+   # frgng_exit ~ 1
+"
+
+
+# result<-lavaan(model, data=modelData, fixed.x=FALSE, missing="FIML");
+# summary(result, fit.measures=TRUE);
+
+#model_day1 <- common_fac_day_1
+
+# Export the final data frame (for Onyx)
+#write.csv(reduced_df_1, "modelling_battery/pilot_retest/reduced_df_1.csv")
+
+# Estimate the model for Day 1
+# fit_day1 <- sem(model_day1, data = reduced_df_1, estimator = "MLR")
+fit_day1 <- sem(model_day1, data = df_1, estimator = "MLR")
+#fit_day1 <- sem(model_age_day1, data = as.data.frame(scale(age_params_df)), estimator = "ML")
+
+# Summarize the results for Day 1
+summary(fit_day1, standardized = TRUE, fit.measures = TRUE, rsquare = TRUE)
+
+# Plot the measurement model for Day 1
+lavaanPlot(fit_day1, coefs = TRUE, stand = FALSE, covs = TRUE, stars = c("latent","covs"),graph_options = list(rankdir = "TB"))
+
+# Investigate the goodness of fit
+interpret(fit_day1)
+
+# Print the residual matrix
+residuals(fit_day1, type="standardized")
+
+# Print the modification indices
+modindices(fit_day1)
+```
+## Monte-Carlo Simulation
+
+```{r}
+# # Define simulation parameters
+# sample_size <- 180
+# num_replications <- 1000
+# 
+# # Generate synthetic data and estimate the SEM model
+# data.model <- model.lavaan(fit_day1,std = TRUE)
+# 
+# fit <- sim(num_replications, n=sample_size, data=reduced_df_1)
+# summary(fit)
+
+set.seed(123)  # For reproducibility
+
+# Number of simulated datasets
+n_sim <- 1000
+
+#param_estimates <- parameterEstimates(fit_day1)
+
+
+# Simulate data
+sim_data <- simulateData(model_day1_eps, sample.nobs = 300)
+
+fit_sim <- sem(model_day1, data = sim_data, estimator = "MLR")
+summary(fit_sim, standardized = TRUE, fit.measures = FALSE, rsquare = TRUE)
+
+# Investigate the goodness of fit
+interpret(fit_sim)
+
+lavaanPlot(fit_sim, coefs = TRUE, stand = FALSE, covs = TRUE, stars = c("latent","covs"),graph_options = list(rankdir = "TB"))
+
+
+```
+# Day 2
+## Load and standardize the data
+
+```{r}
+# Load the df_2
+#df_2_path <-"../df_2.csv"
+
+if (rt_anal == FALSE) {
+  df_2_path <-"../df_2.csv"
+} else {
+  df_2_path <-"../df_2_rt.csv"
+}
+
+df_2 <- as.data.frame(read.csv(df_2_path))
+
+df_2_last_year <- as.data.frame(read.csv("../last year/df_2.csv"))
+
+if ("X" %in% colnames(df_2_last_year)) {
+  # first column is x - remove
+  df_2_last_year$X <- NULL
+}
+
+reduced_this_year_2 <- df_2 %>%
+  select(foraging_exit_threshold, rlwm_alpha, gng_beta, gng_eps, phys_k)
+
+df_2_last_year <- df_2_last_year %>%
+  mutate(foraging_exit_threshold = average_value, gng_beta = gng_beta_rew, gng_eps = gng_eps_rew) %>%
+  select(foraging_exit_threshold, rlwm_alpha, gng_beta, gng_eps, phys_k)
+
+# Combine last year and this year into one df
+# last_and_this_df_2 <- rbind(reduced_this_year_2, df_1_last_year)
+last_and_this_df_2 <- reduced_this_year_2
+
+#last_1_and_this_df_2 <- rbind(reduced_this_year_2, reduced_df_1)
+
+
+# Check if the "id" column exists and drop it if it does
+if ("id" %in% colnames(df_2)) {
+  df_2_with_id <- df_2
+  df_2 <- df_2 %>% select(-id)
+} else if ("X" %in% colnames(df_2)) {
+  # first column is x - remove
+  df_2$X <- NULL
+}
+
+reduced_df_2 <- df_2
+#reduced_df_2 <- last_and_this_df_2
+
+standard_red_df_2 <- as.data.frame(scale(reduced_df_2))
+
+head(standard_red_df_2)
+```
+
+## Check prerequisities
+```{r fig.height=7, fig.width=15}
+# Set up the layout for the plots
+par(mfrow = c(2, 4))  # Set up a 2x4 grid for plots
+
+# Generate histograms for each variable
+for (i in 1:ncol(reduced_df_2)) {
+  hist(reduced_df_2[, i], main = colnames(reduced_df_2)[i], xlab = "",breaks=10)
+}
+
+# Generate QQ plot for each variable
+par(mfrow = c(2, 4))  # Set up a 2x4 grid for plots
+for (i in 1:ncol(reduced_df_2)) {
+  qqnorm(reduced_df_2[, i], main = colnames(reduced_df_2)[i])
+  qqline(reduced_df_2[, i])
+}
+
+# Reset to default single plot layout
+par(mfrow = c(1, 1))
+
+# Check the multivariete normality
+mvn_plot_df_2 <- mvn(reduced_df_2, mvnTest = "mardia", multivariatePlot = "qq")
+print(mvn_plot_df_2$multivariateNormality)
+print(mvn_plot_df_2$univariateNormality)
+
+# Generate the correlation matrix
+cor_matrix <- correlation(reduced_df_2)
+cor_matrix %>%
+  summary(redundant = TRUE) %>%
+  plot()
+
+boxplot(reduced_df_2)
+
+# Replace outliers with NA
+# no_out_reduced_df_2 <- replace_outliers_with_na(reduced_df_2)
+# 
+# 
+# 
+# boxplot(no_out_reduced_df_2)
+# 
+# # Multiple Imputation
+# imputed_data <- mice(no_out_reduced_df_2, m = 5, method = 'pmm', seed = 500)
+# 
+# # Create a complete data set from the imputed data
+# imputed_reduced_df_2 <- complete(imputed_data)
+
+# Check the multivariete normality
+# mvn_plot <- mvn(imputed_reduced_df_2, mvnTest = "mardia", multivariatePlot = "qq")
+# print(mvn_plot$multivariateNormality)
+# print(mvn_plot$univariateNormality)
+
+# replace the outlier data with the imputed data 
+#reduced_df_2 <- imputed_reduced_df_2
+
+
+
+```
+## Day 1 vs day 2 comparison
+```{r}
+# df_1_non_ceiling_only_retest <- df_1_with_id %>%
+#   dplyr::filter(id %in% df_2_with_id$id)
+# 
+# 
+# # Combine the two data frames into a long format
+# df_combined <- bind_rows(
+#   df_1_non_ceiling_only_retest %>% mutate(type = "Day 1"),
+#   df_2_with_id %>% mutate(type = "Day 2")
+# )
+# 
+# # Compute the difference and create a color column
+# df_combined <- df_combined %>%
+#   group_by(id) %>%
+#   mutate(
+#     d_phys_k = phys_k[type == "Day 2"] - phys_k[type == "Day 1"],
+#     color = ifelse(diff > 0, "blue", "red")
+#   ) %>%
+#   ungroup()
+# 
+# # Create the boxplots and draw lines between corresponding ids
+# ggplot(df_combined, aes(x = type, y = phys_k)) +
+#   geom_boxplot() +
+#   geom_point() +
+#   geom_line(aes(group = id, color = color), alpha = 1) +
+#   scale_color_identity() +
+#   labs(title = "Boxplots of phys_k for Day 1 and Day 2",
+#        x = "Day",
+#        y = "phys_k") +
+#   theme_minimal()
+
+
+```
+# Two step transformation of k parameter
+
+```{r}
+# Example transformation for your k parameter
+transform_to_normal <- function(x) {
+  # browser()
+  
+  # Step 1: Convert to percentile rank
+  percentile_rank <- rank(x, ties.method = "average") / (length(x) + 1)
+  
+  # Step 2: Apply inverse-normal transformation
+  normal_transformed <- qnorm(percentile_rank)
+  
+  return(normal_transformed)
+}
+
+k_transformed <- transform_to_normal(reduced_df_2$phys_k)
+
+
+hist(k_transformed, main = "Transformed k parameter", xlab = "Transformed k")
+
+# Check normality
+shapiro.test(k_transformed)
+
+
+reduced_df_2$k_transformed <- k_transformed
+standard_red_df_2$phys_k_transformed <- k_transformed 
+```
+
+
+## Variable transformation
+```{r}
+# Set up the layout for the plots
+par(mfrow = c(2, 4))  # Set up a 2x4 grid for plots
+
+# Generate histograms for each variable
+for (i in 1:ncol(reduced_df_2)) {
+  hist(reduced_df_2[, i], main = colnames(reduced_df_2)[i], xlab = "")
+  qqnorm(reduced_df_2[, i], main = colnames(reduced_df_2)[i])
+  qqline(reduced_df_2[, i])
+}
+
+# Check the multivariete normality
+mvn_plot <- mvn(reduced_df_2, mvnTest = "mardia", multivariatePlot = "qq")
+print(mvn_plot$multivariateNormality)
+print(mvn_plot$univariateNormality)
+
+
+
+
+```
+
+## Last normality check&fix
+```{r}
+
+sem_reduced_df_2 <- reduced_df_2 %>% 
+  select(phys_k, rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold, k_transformed, phys_credits_rt)
+
+# Make the non-normal normal
+sem_reduced_df_2$gng_eps <- log(sem_reduced_df_2$gng_eps)
+sem_reduced_df_2$rlwm_alpha <- log(sem_reduced_df_2$rlwm_alpha)
+sem_reduced_df_2$gng_beta <- log(sem_reduced_df_2$gng_beta)
+
+
+
+# Check the multivariete normality
+mvn_plot <- mvn(sem_reduced_df_2, mvnTest = "mardia", multivariatePlot = "qq")
+print(mvn_plot$multivariateNormality)
+print(mvn_plot$univariateNormality)
+
+
+par(mfrow = c(2, 4))
+# Generate histograms for each variable
+for (i in 1:ncol(sem_reduced_df_2)) {
+  hist(sem_reduced_df_2[, i], main = colnames(sem_reduced_df_2)[i], xlab = "")
+}
+
+
+```
+```{r}
+# Replace only the transformed columns back into the original reduced_df_1
+reduced_df_2$gng_eps <-    sem_reduced_df_2$gng_eps
+reduced_df_2$rlwm_alpha <- sem_reduced_df_2$rlwm_alpha
+reduced_df_2$gng_beta <-   sem_reduced_df_2$gng_beta
+
+# Generate the correlation matrix
+cor_matrix <- correlation(reduced_df_2)
+cor_matrix %>%
+  summary(redundant = TRUE) %>%
+  plot()
+
+
+```
+## Demographic variables
+```{r}
+# Load the df_1 with id to choose only the relevant participants
+# df_2_with_id_path <- paste(modelling_path, "/df_2_with_id.csv", sep="")
+# df_2_with_id <- as.data.frame(read.csv(df_2_with_id_path, row.names = 1))
+# df_2_with_id <- df_2_with_id %>%
+#   rename(frgng_exit = average_value)
+# 
+# reduced_df_2_with_id <- df_2_with_id[,c(1,2,6,7,8,11,12,15)]
+# 
+# # Load the demographic variables from Prolific
+# raw_demo_data_day2_path <- paste(modelling_path, "/demo_data_2.csv", sep="")
+# raw_demo_data_day2 <- as.data.frame(read.csv(raw_demo_data_day2_path))
+# 
+# 
+# # Filter demo_data_day2 to keep only the rows where the ID is present in reduced_df_2_with_id
+# filtered_demo_data_day2 <- raw_demo_data_day2 %>%
+#   filter(Participant.id %in% reduced_df_2_with_id$id)
+# 
+# demo_data_day2 <- filtered_demo_data_day2 %>%
+#   dplyr::select(Participant.id, Time.taken, Age, Sex, Ethnicity.simplified)
+# 
+# demo_data_day2$Age <- as.numeric(demo_data_day2$Age)
+# 
+# # Rename the ID columns to the same name if they are different
+# names(demo_data_day2)[names(demo_data_day2) == "Participant.id"] <- "id"
+# 
+# # Merge the data frames based on the 'id' column
+# merged_data_2 <- merge(demo_data_day2, df_2_with_id, by = "id")
+# 
+# # View the merged data frame
+# print(merged_data_2)
+```
+## Correlation of the composite scores
+```{r}
+# Create composite scores for Vigor and RL
+# 
+# # Calculate the composite score for vigor
+# comp_reduced_df_2 <- reduced_df_2 %>%
+#   mutate(vigor = rowMeans(dplyr::select(., frgng_exit, phys_k,gng_eps_rew, gng_eps_pun), na.rm = TRUE)) %>%
+#     mutate(RL = rowMeans(dplyr::select(., rlwm_alpha, rlwm_rho, gng_alpha_rew, gng_alpha_pun, gng_eps_rew, gng_eps_pun), na.rm = TRUE)) %>%
+#    bind_cols(demo_data_day2) %>%
+#   dplyr::select(id, Time.taken, Age, Sex, Ethnicity.simplified, frgng_exit, rlwm_alpha, rlwm_rho, gng_alpha_rew, gng_alpha_pun, gng_eps_rew, gng_eps_pun, phys_k, vigor, RL)
+# 
+# # Create a new data frame with the composite scores
+# compos_df_2 <- comp_reduced_df_2 %>%
+#   dplyr::select(vigor, RL, Age)
+# 
+# # compos_df_1$vigor <- scale(compos_df_1$vigor)
+# # compos_df_1$RL <- scale(compos_df_1$RL)
+# 
+# # Correlation between averaged Vigor and RL
+# correlation <- cor(compos_df_2$vigor, compos_df_2$RL, use = "complete.obs")
+# 
+# # Print the correlation
+# print(paste("Correlation between Vigor and RL:", correlation))
+# 
+# # Create a scatter plot with a fitted line and SE using ggplot2
+# scatter_plot <- ggplot(compos_df_2, aes(x = vigor, y = RL)) +
+#   geom_point(aes(color = ifelse(Age > 33, "More than 33", "Less than or equal to 33"))) +  geom_smooth(method = "lm", se = TRUE) + # Adding the fitted line with SE
+#   labs(title = "Scatter Plot of Vigor vs RL",
+#        x = "Vigor",
+#        y = "RL") +
+#   theme_minimal()
+# print(scatter_plot)
+# 
+# ## Correlation of age with Vigor
+# cor_vigor_age <- cor(compos_df_2$vigor, compos_df_2$Age, use = "complete.obs")
+# 
+# # Print the correlation
+# print(paste("Correlation between Vigor and Age:", cor_vigor_age))
+# 
+# # Create a scatter plot with a fitted line and SE using ggplot2
+# scatter_plot <- ggplot(compos_df_1, aes(x = vigor, y = Age)) +
+#   geom_point(aes(color = ifelse(Age > 33, "More than 33", "Less than or equal to 33"))) +  geom_smooth(method = "lm", se = TRUE) + # Adding the fitted line with SE
+#   labs(title = "Scatter Plot of Vigor vs Age",
+#        x = "Vigor",
+#        y = "Age") +
+#   theme_minimal()
+# print(scatter_plot)
+# 
+# ## Correlation of age with RL
+# cor_RL_age <- cor(compos_df_2$RL, compos_df_2$Age, use = "complete.obs")
+# 
+# # Print the correlation
+# print(paste("Correlation between RL and Age:", cor_RL_age))
+# 
+# # Create a scatter plot with a fitted line and SE using ggplot2
+# scatter_plot <- ggplot(compos_df_1, aes(x = RL, y = Age)) +
+#   geom_point(aes(color = ifelse(Age > 33, "More than 33", "Less than or equal to 33"))) +  geom_smooth(method = "lm", se = TRUE) + # Adding the fitted line with SE
+#   labs(title = "Scatter Plot of Vigor vs Age",
+#        x = "RL",
+#        y = "Age") +
+#   theme_minimal()
+# print(scatter_plot)
+# 
+# ## Generate the correlation matrix
+# # Subset the df
+# age_params_df_2 <- comp_reduced_df_2 %>%
+#   dplyr::select(-id, -Time.taken, -Sex, -Ethnicity.simplified, -vigor, -RL)
+# 
+# cor_matrix_2 <- correlation(age_params_df_2)
+# cor_matrix_2 %>%
+#   summary(redundant = TRUE) %>%
+#   plot()
+```
+
+## Get SEM for day 2
+
+```{r}
+
+#last_1_and_this_df_2 <- rbind(reduced_df_2, reduced_df_1)
+
+# if (rt_anal == FALSE) {
+#   df_2_path <-"../reduced_df_2.csv"
+# } else {
+#   df_2_path <-"../reduced_df_2_rt.csv"
+# }
+
+# Export the reduced_df for SEM in Stata
+# write.csv(scale(last_1_and_this_df_2 <- rbind(reduced_df_2, reduced_df_1)
+# ), "last_year_1_this_year_2.csv")
+# write.csv(scale(reduced_df_2), "last_year_reduced_df_2.csv")
+
+if (rt_anal == TRUE) {
+  write.csv(scale(reduced_df_2), "rt_reduced_df_2.csv")
+}
+
+
+model_only_vigor <- '
+  # Define latent variables
+  Vigor =~ foraging_exit_threshold + k_transformed + gng_eps 
+
+'
+
+model_only_RL <- '
+  # Define latent variables
+  RL =~ rlwm_alpha + rlwm_rho + gng_beta + gng_eps
+'
+ 
+model_day1_eps <- '
+  # Define latent variables
+  Vigor =~ foraging_exit_threshold + k_transformed + gng_eps
+  RL =~ rlwm_alpha + gng_beta + rlwm_rho + gng_eps
+  
+  # Correlation between latent variables
+  Vigor ~~ RL
+' 
+
+fit_day2 <- sem(model_only_RL, data = reduced_df_2, estimator = "ML")
+
+# Summarize the results for Day 2
+summary(fit_day2, standardized = TRUE,fit.measures = FALSE, rsquare = TRUE)
+
+# Plot the measurement model for Day 2
+lavaanPlot(fit_day2, coefs = TRUE, stand = FALSE, covs = TRUE, stars = c("latent","covs"))
+
+# Investigate the goodness of fit
+interpret(fit_day2)
+
+# Print the residual matrix
+residuals(fit_day2, type="standardized")
+
+# Print the modification indices
+modindices(fit_day2)
+
+```
+## Monte-Carlo Simulation
+
+```{r}
+# Define simulation parameters
+# sample_size <- 180
+# num_replications <- 1000
+# 
+# # Generate synthetic data and estimate the SEM model
+# data.model <- model.lavaan(fit_day1,std = TRUE)
+# 
+# fit <- sim(num_replications, n=sample_size, data=reduced_df_1)
+# summary(fit)
+
+set.seed(123)  # For reproducibility
+
+# Number of simulated datasets
+n_sim <- 1000
+
+param_estimates <- parameterEstimates(fit_day2)
+
+
+# Simulate data
+sim_data <- simulateData(model_day2, sample.nobs = 80)
+
+fit_sim <- sem(model_day2, data = sim_data, estimator = "MLR")
+summary(fit_sim)
+
+# Investigate the goodness of fit
+interpret(fit_sim)
+
+lavaanPlot(fit_sim, coefs = TRUE, stand = FALSE, covs = TRUE, stars = c("latent","covs"),graph_options = list(rankdir = "TB"))
+
+```
+
+## Combine day 1 and day 2
+
+```{r}
+# Combine data for both occasions
+# combined_data <- bind_rows(mutate(standard_red_df_1, Occasion = "Day 1"),
+#                             mutate(standard_red_df_2, Occasion = "Day 2"))
+
+# Add suffix to variables in each data frame
+# renamed_standard_red_df_1 <- standard_red_df_1 %>%
+#   rename_with(~ paste0(., "_day1"))
+# 
+# renamed_standard_red_df_2 <- standard_red_df_2 %>%
+#   rename_with(~ paste0(., "_day2"))
+
+renamed_standard_red_df_1 <- reduced_df_1 %>%
+  rename_with(~ paste0(., "_day1"))
+
+renamed_standard_red_df_2 <- reduced_df_2 %>%
+  rename_with(~ paste0(., "_day2"))
+
+
+
+# Make sure both data frames have the same number of rows
+# num_rows_diff <- nrow(renamed_standard_red_df_1) - nrow(renamed_standard_red_df_2)
+
+# If there is a difference in the number of rows, add NA rows to the shorter data frame
+# if (num_rows_diff > 0) {
+#   renamed_standard_red_df_2 <- bind_rows(renamed_standard_red_df_2, 
+#                                  data.frame(matrix(NA, nrow = num_rows_diff, ncol = 0)))
+# } else if (num_rows_diff < 0) {
+#   renamed_standard_red_df_1 <- bind_rows(renamed_standard_red_df_1, 
+#                                  data.frame(matrix(NA, nrow = abs(num_rows_diff), ncol = 0)))
+# }
+# 
+# # Combine data frames side by side
+# combined_data <- cbind(renamed_standard_red_df_1, renamed_standard_red_df_2)
+
+# Create a full index from 1 to nrow(renamed_standard_red_df_1)
+full_index <- 1:nrow(renamed_standard_red_df_1)
+
+# Create an empty data frame with full_index as row names and the same columns as renamed_standard_red_df_2
+combined_data <- data.frame(matrix(NA, nrow = length(full_index), ncol = ncol(renamed_standard_red_df_2)))
+colnames(combined_data) <- colnames(renamed_standard_red_df_2)
+rownames(combined_data) <- full_index
+
+# Fill in the rows from renamed_standard_red_df_2
+combined_data[row_names_from_day1, ] <- renamed_standard_red_df_2
+
+# Delete missing participants from day 1
+combined_data <- combined_data[-c(12,46),]
+combined_data <- cbind(renamed_standard_red_df_1, combined_data)
+```
+# Multiple data imputation
+```{r}
+# Perform multiple imputation
+imputed_data <- mice(combined_data, m = 5, maxit = 50, method = 'pmm', seed = 500)
+
+# Check the imputed data
+#summary(imputed_data)
+
+# Extract the first completed dataset
+completed_data <- complete(imputed_data)
+
+# View the completed data
+head(completed_data)
+
+
+
+par(mfrow = c(2, 4))
+# Generate histograms for each variable
+for (i in 1:ncol(completed_data)) {
+  hist(completed_data[, i], main = colnames(completed_data)[i], xlab = "")
+}
+
+# Reset to default single plot layout
+par(mfrow = c(1, 1))
+
+# Check the multivariete normality
+completed_data_plot <- mvn(completed_data, mvnTest = "mardia", multivariatePlot = "qq")
+print(completed_data_plot$multivariateNormality)
+print(completed_data_plot$univariateNormality)
+
+```
+# Get longitidunal model
+
+```{r,eval=FALSE}
+
+diff_scores_model <- '
+  RL_day1 =~ rlwm_alpha_day1 + rlwm_rho_day1 + gng_alpha_rew_day1 + gng_alpha_pun_day1 #+ gng_eps_rew_day1
+  Vigor_day1 =~ frgng_exit_day1 + phys_k_day1 #+ gng_eps_rew_day1
+
+  # Measurement model for Day 2
+  RL_day2 =~ rlwm_alpha_day2 + rlwm_rho_day2 + gng_alpha_rew_day2 + gng_alpha_pun_day2 #+ gng_eps_rew_day2
+  Vigor_day2 =~ frgng_exit_day2 + phys_k_day2 #+ gng_eps_rew_day2
+  
+  
+  # Autoregressive paths
+  RL_day2 ~ RL_day1
+  Vigor_day2 ~ Vigor_day1
+  
+  #RL_day1 ~~ Vigor_day1
+  #RL_day2 ~~ Vigor_day2
+  
+  #D1 =~ RL_day1 + Vigor_day1
+  #D2 =~ RL_day2 + Vigor_day2
+
+'
+
+diff_scores_vigor <- '
+Vigor_day1 =~ frgng_exit_day1 + phys_k_day1 #+ gng_eps_rew_day1
+Vigor_day2 =~ frgng_exit_day2 + phys_k_day2 #+ gng_eps_rew_day2
+
+Vigor_day2 ~ Vigor_day1
+
+#D =~ Vigor_day2
+#D ~~ Vigor_day1
+'
+
+diff_scores_RL <- '
+RL_day1 =~ rlwm_alpha_day1 + rlwm_rho_day1 + gng_alpha_rew_day1 + gng_alpha_pun_day1 #+ gng_eps_rew_day1
+RL_day2 =~ rlwm_alpha_day2 + rlwm_rho_day2 + gng_alpha_rew_day2 + gng_alpha_pun_day2 #+ gng_eps_rew_day2
+
+RL_day2 ~ RL_day1
+
+#D =~ RL_day2
+#D ~~ RL_day1
+# 
+gng_alpha_rew_day1	~~	gng_alpha_rew_day2
+#gng_alpha_pun_day1	~~	gng_alpha_rew_day2
+#gng_alpha_rew_day2	~~	gng_alpha_pun_day2
+'
+
+# 
+# measurement_model <- '
+#   # Measurement model for Day 1
+#   RL_day1 =~ rlwm_alpha_day1 + rlwm_rho_day1 + gng_alpha_rew_day1 + gng_alpha_pun_day1 + gng_eps_rew_day1 + gng_eps_pun_day1
+#   Vigor_day1 =~ frgng_exit_day1 + phys_k_day1 + gng_eps_rew_day1 + gng_eps_pun_day1
+# 
+#   # Measurement model for Day 2
+#   RL_day2 =~ rlwm_alpha_day2 + rlwm_rho_day2 + gng_alpha_rew_day2 + gng_alpha_pun_day2 + gng_eps_rew_day2 + gng_eps_pun_day2
+#   Vigor_day2 =~ frgng_exit_day2 + phys_k_day2 + gng_eps_rew_day2 + gng_eps_pun_day2
+# '
+# 
+reduced_measurement_model <- '
+  # Measurement model for Day 1
+  RL_day1 =~ rlwm_alpha_day1 + rlwm_rho_day1 + gng_alpha_rew_day1 + gng_alpha_pun_day1 #+ gng_eps_rew_day1
+  Vigor_day1 =~ frgng_exit_day1 + phys_k_day1 #+ gng_eps_rew_day1
+
+  # Measurement model for Day 2
+  RL_day2 =~ rlwm_alpha_day2 + rlwm_rho_day2 + gng_alpha_rew_day2 + gng_alpha_pun_day2 #+ gng_eps_rew_day2
+  Vigor_day2 =~ frgng_exit_day2 + phys_k_day2 #+ gng_eps_rew_day2
+
+  RL_day2 ~ RL_day1
+  Vigor_day2 ~ Vigor_day1
+  
+  #RL_day1 ~~ Vigor_day1
+  #RL_day2 ~~ Vigor_day2
+  '
+# 
+# #measurement_model <- reduced_measurement_model
+# 
+# # Specify the structural model
+# structural_model <- '
+#   # Autoregressive paths
+#   RL_day1 ~ RL_day2
+#   Vigor_day1 ~ Vigor_day2
+#   
+#   RL_day1 ~~ Vigor_day1
+#   RL_day2 ~~ Vigor_day2
+#   
+#   #rlwm_rho_day1	~~	rlwm_rho_day2
+#   #frgng_exit_day1	~~	frgng_exit_day2
+#   #phys_k_day1	~~	phys_k_day2
+#   #gng_alpha_rew_day2	~~	gng_alpha_pun_day2
+#   
+# '
+
+# Define your SEM model (assuming `full_model` is your SEM model specification)
+# fit the SEM model to each imputed dataset and pool the results
+long_imp_fit <- sem(diff_scores_RL, data=complete(imputed_data),estimator="MLR")
+
+# Pool the results
+summary(long_imp_fit,standardized=TRUE)
+
+# Evaluate model fit
+interpret(long_imp_fit)
+
+lavaanPlot(long_imp_fit, coefs = TRUE, stand = TRUE, covs = TRUE, stars = c("latent","covs"))
+
+# Print the modification indices
+modindices(long_imp_fit)
+
+# # Combine measurement and structural models
+# full_model <- paste(measurement_model, structural_model, sep = "\n")
+# 
+# # Estimate the model
+# fit_longitudinal_sem <- sem(full_model, data = combined_data, missing = "fiml",estimator="MLR")
+# 
+# # Summarize the results
+# summary(fit_longitudinal_sem, standardized = TRUE)
+# 
+# # Evaluate model fit
+# interpret(fit_longitudinal_sem)
+# 
+# # Plot the longitudinal SEM model
+# lavaanPlot(fit_longitudinal_sem, coefs = TRUE, stand = TRUE, covs = TRUE, stars = c("latent","covs"))
+# 
+# # Print the residual matrix
+# residuals(fit_longitudinal_sem, type="standardized")
+# 
+# # Print the modification indices
+# modindices(fit_longitudinal_sem)
+
+```
+
+## Invariance measurement test
+
+```{r, eval=FALSE}
+
+#what about the non-reduced model in the end
+# day_1_full_model <- '
+#   RL =~ rlwm_alpha + rlwm_rho + rlwm_bias + rlwm_decay + rlwm_lapse + gng_alpha_rew + gng_alpha_pun + gng_eps_rew + gng_eps_pun + gng_beta_pun + gng_beta_rew + gng_lapse
+#   Vigor =~ frgng_exit + phys_k + phys_beta + gng_eps_rew + gng_eps_pun
+# '
+# 
+day_1_full_model <- '
+  RL =~ rlwm_alpha + rlwm_rho + rlwm_bias + rlwm_decay  + gng_alpha_rew + gng_eps_rew
+  Vigor =~ frgng_exit + phys_k  + gng_eps_rew
+'
+
+day_1_full_model_OG <- '
+  RL =~ rlwm_alpha + rlwm_rho + gng_alpha_rew + gng_alpha_pun #+ gng_eps_rew
+  Vigor =~ frgng_exit + phys_k  #+ gng_eps_rew
+'
+
+cfa_full_day_1_fit <- cfa(day_1_full_model_OG, estimator = "MLR", data = as.data.frame(scale(reduced_df_1)))
+summary(cfa_full_day_1_fit)
+
+# cfa_full_day_1_fit <- cfa(day_1_full_model, estimator = "MLR", data = as.data.frame(scale(df_1)))
+# summary(cfa_full_day_1_fit)
+
+## day 2 ##
+day_2_full_model_OG <- '
+  RL =~ rlwm_alpha + rlwm_rho + gng_alpha_rew + gng_alpha_pun #+ gng_eps_rew
+  Vigor =~ frgng_exit + phys_k  #+ gng_eps_rew
+'
+# 
+day_2_full_model <- '
+  RL =~ rlwm_alpha + rlwm_rho + rlwm_bias + rlwm_decay  + gng_alpha_rew + gng_eps_rew
+  Vigor =~ frgng_exit + phys_k  + gng_eps_rew
+'
+  
+  # day_2_full_model <- '
+  # RL =~ rlwm_alpha + rlwm_rho + rlwm_bias + rlwm_decay + rlwm_lapse + gng_alpha_rew + gng_alpha_pun + gng_eps_rew + gng_eps_pun + gng_beta_pun + gng_beta_rew + gng_lapse
+  # Vigor =~ frgng_exit + phys_k + phys_beta + gng_eps_rew + gng_eps_pun
+  # '
+  
+cfa_full_day_2_fit <- cfa(day_2_full_model_OG, estimator = "MLR", data = as.data.frame(scale(reduced_df_2)))
+summary(cfa_full_day_2_fit)
+# cfa_full_day_2_fit <- cfa(day_2_full_model, estimator = "MLR", data = as.data.frame(scale(df_2)))
+# summary(cfa_full_day_2_fit)
+
+configural_invariance_model_OG <- '
+  RL =~ rlwm_alpha + rlwm_rho + gng_alpha_rew + gng_alpha_pun + gng_eps_rew
+  Vigor =~ frgng_exit + phys_k  + gng_eps_rew
+'
+
+configural_invariance_model <- '
+  RL =~ rlwm_alpha + rlwm_rho + rlwm_bias + rlwm_decay  + gng_alpha_rew + gng_eps_rew
+  Vigor =~ frgng_exit + phys_k  + gng_eps_rew
+'
+
+#merge day 1 and day 2 in a long format
+day_1_data <- df_1 %>%
+  mutate(day = "1")
+
+day_2_data <- df_2 %>%
+  mutate(day = "2")
+
+# day_1_data <- reduced_df_1 %>%
+#   mutate(day = "1")
+# 
+# day_2_data <- reduced_df_2 %>%
+#   mutate(day = "2")
+
+day_1_2_cfa_data <- rbind(day_1_data, day_2_data)
+
+# z-transform for the cfa
+day_1_2_cfa_data[,1:15] <- as.data.frame(scale(day_1_2_cfa_data[,1:15]))
+#day_1_2_cfa_data[,1:8] <- as.data.frame(scale(day_1_2_cfa_data[,1:8]))
+
+
+# Configural model
+cfa_config <- cfa(configural_invariance_model, data = day_1_2_cfa_data, estimator = "MLR", group = "day")
+
+summary(cfa_config, fit.measures = TRUE, standardized = TRUE)
+
+# Metric model
+cfa_metric <- cfa(configural_invariance_model, data = day_1_2_cfa_data, estimator = "MLR", group = "day", 
+                  group.equal = "loadings")
+
+# Model comparison
+fit <- compareFit(cfa_config, cfa_metric)
+summary(fit)
+
+# Scalar model
+cfa_scalar <- cfa(configural_invariance_model, data = day_1_2_cfa_data, estimator = "MLR", group = "day", 
+                  group.equal = c("loadings","intercepts"))
+
+# Model comparison
+fit <- compareFit(cfa_metric, cfa_scalar)
+summary(fit)
+a <- lavTestScore(cfa_scalar)
+a
+parTable(cfa_scalar)
+
+# Scalar model with constrained intercept of gng_alpha_rew
+cfa_scalar_adj <- cfa(configural_invariance_model, data = day_1_2_cfa_data, estimator = "MLR", group = "day", 
+                  group.equal = c("loadings","intercepts"),group.partial = "gng_alpha_rew ~1")
+
+fit <- compareFit(cfa_metric, cfa_scalar_adj)
+summary(fit)
+
+# Strict model with constrained intercept of gng_alpha_rew
+cfa_strict_adj <- cfa(configural_invariance_model, data = day_1_2_cfa_data, estimator = "MLR", group = "day", 
+                  group.equal = c("loadings","intercepts","residuals"),group.partial = "gng_alpha_rew ~1")
+fit <- compareFit(cfa_scalar_adj, cfa_strict_adj)
+summary(fit)
+a <- lavTestScore(cfa_strict_adj)
+a
+parTable(cfa_strict_adj)
+
+# Strict model with constrained intercept of gng_alpha_rew and gng_eps_rew
+cfa_strict_adj_2 <- cfa(configural_invariance_model, data = day_1_2_cfa_data, estimator = "MLR", group = "day", group.equal = c("loadings","intercepts","residuals"),group.partial =c("gng_alpha_rew ~1","gng_eps_rew ~~ gng_eps_rew"))
+fit <- compareFit(cfa_scalar_adj, cfa_strict_adj_2)
+summary(fit)
+
+
+# configural_invariance_model_day_1 <- '
+#   RL_day1 =~ rlwm_alpha_day1 + rlwm_rho_day1 + gng_alpha_rew_day1 + gng_alpha_pun_day1 + gng_eps_rew_day1 + gng_eps_pun_day1
+#   Vigor_day1 =~ frgng_exit_day1 + phys_k_day1 + gng_eps_rew_day1 + gng_eps_pun_day1
+# '
+# 
+# configural_invariance_model_day_2 <- '
+#   RL_day2 =~ rlwm_alpha_day2 + rlwm_rho_day2 + gng_alpha_rew_day2 + gng_alpha_pun_day2 + gng_eps_rew_day2 + gng_eps_pun_day2
+#   Vigor_day2 =~ frgng_exit_day2 + phys_k_day2 + gng_eps_rew_day2 + gng_eps_pun_day2
+# '
+# 
+# metric_invariance_model <- '
+#     RL_day1 =~ a*rlwm_alpha_day1 + b*rlwm_rho_day1 + c*gng_alpha_rew_day1 + d*gng_alpha_pun_day1 + e*gng_eps_rew_day1 + f*gng_eps_pun_day1
+#   Vigor_day1 =~ g*frgng_exit_day1 + h*phys_k_day1 + i*gng_eps_rew_day1 + j*gng_eps_pun_day1
+# 
+#   # Measurement model for Day 2
+#   RL_day2 =~ a*rlwm_alpha_day2 + b*rlwm_rho_day2 + c*gng_alpha_rew_day2 + d*gng_alpha_pun_day2 + e*gng_eps_rew_day2 +            f*gng_eps_pun_day2
+#   Vigor_day2 =~ g*frgng_exit_day2 + h*phys_k_day2 + i*gng_eps_rew_day2 + j*gng_eps_pun_day2
+# '
+# 
+# cfa_config <- cfa(configural_invariance_model_day_1, data = reduced_df_1, estimator = "WLSMV")
+
+# measurement_model <- '
+#   RL =~ rlwm_alpha + rlwm_rho + gng_alpha_rew + gng_alpha_pun + gng_eps_rew + gng_eps_pun
+#   Vigor =~ frgng_exit + phys_k + gng_eps_rew + gng_eps_pun
+# '
+# 
+# # Configural invariance
+# configural_model_day1 <- cfa(measurement_model, data = standard_red_df_1)
+# configural_model_day2 <- cfa(measurement_model, data = standard_red_df_2)
+# 
+# # Metric invariance (same factor loadings)
+# metric_model_day1 <- cfa(measurement_model, data = standard_red_df_1, group.equal = "loadings")
+# metric_model_day2 <- cfa(measurement_model, data = standard_red_df_2, group.equal = "loadings")
+# 
+# anova(configural_model_day1, metric_model_day1)
+# anova(configural_model_day2, metric_model_day2)
+
+
+```
+
+## SEM with the best model from CFA
+
+# Day 1
+```{r,eval=FALSE}
+par(mfrow = c(3,5))
+# Generate histograms for each variable
+for (i in 1:ncol(df_1)) {
+  hist(df_1[, i], main = colnames(df_1)[i], xlab = "")
+}
+
+# Generate QQ plot for each variable
+par(mfrow = c(3, 5))  # Set up a 2x4 grid for plots
+for (i in 1:ncol(df_1)) {
+  qqnorm(df_1[, i], main = colnames(df_1)[i])
+  qqline(df_1[, i])
+}
+
+# Check the multivariete normality
+mvn_plot <- mvn(df_1, mvnTest = "mardia", multivariatePlot = "qq")
+print(mvn_plot$multivariateNormality)
+print(mvn_plot$univariateNormality)
+
+# outliers
+par(mfrow = c(1,1))
+boxplot(df_1)
+
+## Build the model
+day_1_full_model <- '
+  RL =~ rlwm_alpha + rlwm_rho + rlwm_bias + rlwm_decay  + gng_alpha_rew + a*gng_eps_rew
+  Vigor =~ frgng_exit + phys_k  + a*gng_eps_rew
+  
+  #rlwm_bias	~~ rlwm_decay
+  #rlwm_rho	~~	rlwm_decay
+  #rlwm_alpha	~~	rlwm_decay
+  #gng_alpha_rew	~~ gng_eps_rew
+  # rlwm_alpha ~~ rlwm_bias
+  #rlwm_rho ~~ rlwm_bias
+  #rlwm_alpha ~~ rlwm_rho
+ 
+  RL ~~ Vigor
+'
+fit_day_1_full <- sem(day_1_full_model, data = df_1, estimator = "MLR")
+summary(fit_day_1_full, standardized = TRUE)
+
+# Investigate the goodness of fit
+interpret(fit_day_1_full)
+
+# Print the residual matrix
+residuals(fit_day_1_full, type="standardized")
+
+# Print the modification indices
+modindices(fit_day_1_full)
+
+
+```
+
+# Day 2
+```{r,eval=FALSE}
+par(mfrow = c(3,5))
+# Generate histograms for each variable
+for (i in 1:ncol(df_2)) {
+  hist(df_2[, i], main = colnames(df_2)[i], xlab = "")
+}
+
+# Generate QQ plot for each variable
+par(mfrow = c(3, 5))  # Set up a 2x4 grid for plots
+for (i in 1:ncol(df_2)) {
+  qqnorm(df_2[, i], main = colnames(df_2)[i])
+  qqline(df_2[, i])
+}
+
+# Check the multivariete normality
+mvn_plot <- mvn(df_2, mvnTest = "mardia", multivariatePlot = "qq")
+print(mvn_plot$multivariateNormality)
+print(mvn_plot$univariateNormality)
+
+# outliers
+par(mfrow = c(1,1))
+boxplot(df_2)
+
+## Build the model
+day_2_full_model <- '
+  RL =~ rlwm_alpha + rlwm_rho + rlwm_bias + rlwm_decay  + gng_alpha_rew + gng_eps_rew
+  Vigor =~ frgng_exit + phys_k  + gng_eps_rew
+  
+  # rlwm_bias	~~ rlwm_decay
+  # gng_alpha_rew	~~ gng_eps_rew
+  # rlwm_alpha ~~ rlwm_bias
+  # rlwm_rho ~~ rlwm_bias
+  #rlwm_alpha ~~ rlwm_rho
+ 
+  RL ~~ Vigor
+'
+fit_day_2_full <- sem(day_2_full_model, data = df_2, estimator = "MLR")
+summary(fit_day_2_full, standardized = TRUE)
+
+# Investigate the goodness of fit
+interpret(fit_day_2_full)
+
+# Print the residual matrix
+residuals(fit_day_2_full, type="standardized")
+
+# Print the modification indices
+modindices(fit_day_2_full)
+```
+# Longitidunal model
+
+```{r,eval=FALSE}
+longi_model <- '
+  RL =~ rlwm_alpha + rlwm_rho + rlwm_bias + rlwm_decay  + gng_alpha_rew + gng_eps_rew
+  Vigor =~ frgng_exit + phys_k  + gng_eps_rew
+  
+  #rlwm_alpha ~~ rlwm_decay
+  #rlwm_bias	~~ rlwm_decay
+  #gng_alpha_rew	~~ gng_eps_rew
+  #rlwm_alpha ~~ rlwm_bias
+  # rlwm_rho ~~ rlwm_bias
+  #rlwm_alpha ~~ rlwm_rho
+ 
+  RL ~~ Vigor
+'
+
+fit_both_full <- sem(longi_model, data = day_1_2_cfa_data, estimator = "MLR",group = "day")
+summary(fit_both_full, standardized = TRUE)
+
+# Investigate the goodness of fit
+interpret(fit_both_full)
+
+# Print the residual matrix
+residuals(fit_both_full, type="standardized")
+
+# Print the modification indices
+modindices(fit_both_full)
+
+################################
+
+longi_df_1 <- df_1 %>%
+  rename_with(~ paste0(., "_day1"))
+
+longi_df_2 <- df_2 %>%
+  rename_with(~ paste0(., "_day2"))
+
+full_index <- 1:nrow(longi_df_1)
+
+# Create an empty data frame with full_index as row names and the same columns as renamed_standard_red_df_2
+combined_data_full <- data.frame(matrix(NA, nrow = length(full_index), ncol = ncol(longi_df_2)))
+colnames(combined_data_full) <- colnames(longi_df_2)
+rownames(combined_data_full) <- full_index
+
+# Fill in the rows from renamed_standard_red_df_2
+combined_data_full[row_names_from_day1, ] <- longi_df_2
+
+# Delete missing participants from day 1
+combined_data_full <- combined_data_full[-c(12,46),]
+combined_data_full <- cbind(longi_df_1, combined_data_full)
+
+# Perform multiple imputation
+imputed_data <- mice(combined_data_full, m = 5, maxit = 50, method = 'pmm', seed = 500)
+
+# Extract the first completed dataset
+completed_data_full <- complete(imputed_data)
+```
+# Model specification
+```{r,eval=FALSE}
+longi_model_full <- '
+  # RL_day1 =~ rlwm_alpha_day1 + rlwm_rho_day1 + rlwm_bias_day1 + rlwm_decay_day1 +gng_alpha_rew_day1 + gng_eps_rew_day1
+  # Vigor_day1 =~ frgng_exit_day1 + phys_k_day1 + gng_eps_rew_day1
+  # 
+  # # Measurement model for Day 2
+  # RL_day2 =~ rlwm_alpha_day2 + rlwm_rho_day2 +   rlwm_bias_day2 + rlwm_decay_day2 + gng_alpha_rew_day2 + gng_eps_rew_day2
+  # Vigor_day2 =~ frgng_exit_day2 + phys_k_day2 + gng_eps_rew_day2
+  
+    # Measurement model for Day 1
+    RL_day1 =~ a*rlwm_alpha_day1 + b*rlwm_rho_day1 + c*rlwm_bias_day1 + d*rlwm_decay_day1 +e*gng_alpha_rew_day1 + f*gng_eps_rew_day1
+  Vigor_day1 =~ g*frgng_exit_day1 + h*phys_k_day1 + i*gng_eps_rew_day1
+
+  # Measurement model for Day 2
+  RL_day2 =~ a*rlwm_alpha_day2 + b*rlwm_rho_day2 +   c*rlwm_bias_day2 + d*rlwm_decay_day2 + e*gng_alpha_rew_day2 + f*gng_eps_rew_day2
+  Vigor_day2 =~ g*frgng_exit_day2 + h*phys_k_day2 + i*gng_eps_rew_day2
+
+  
+  #rlwm_alpha ~~ rlwm_decay
+  #rlwm_bias	~~ rlwm_decay
+  #gng_alpha_rew	~~ gng_eps_rew
+  #rlwm_alpha ~~ rlwm_bias
+  # rlwm_rho ~~ rlwm_bias
+  #rlwm_alpha ~~ rlwm_rho
+ 
+
+  
+  # Autoregressive paths
+  RL_day1 ~ 1*RL_day2
+  Vigor_day1 ~ 1*Vigor_day2
+  
+  RL_day1 ~~ Vigor_day1
+  RL_day2 ~~ Vigor_day2
+
+  D1 =~ RL_day1 + Vigor_day1
+  D2 =~ RL_day2 + Vigor_day2
+  
+'
+fit_longi_full <- sem(longi_model_full, data = completed_data_full, estimator = "MLR")
+summary(fit_longi_full, standardized = TRUE)
+
+# Investigate the goodness of fit
+interpret(fit_longi_full)
+
+# Print the residual matrix
+residuals(fit_longi_full, type="standardized")
+
+# Print the modification indices
+modindices(fit_longi_full)
+```
+# Separately for vigor and RL
+```{r,eval=FALSE}
+
+vigor_longi_model <- '
+Vigor_day1 =~ frgng_exit_day1 + phys_k_day1 + gng_eps_rew_day1
+Vigor_day2 =~ frgng_exit_day2 + phys_k_day2 + gng_eps_rew_day2
+Vigor_day1 ~ Vigor_day2
+
+D =~ Vigor_day2
+#D ~~ Vigor_day2
+'
+  
+fit_vigor_longi <- sem(vigor_longi_model, data = completed_data_full, estimator = "MLR")
+summary(fit_vigor_longi, standardized = TRUE)
+
+# Investigate the goodness of fit
+interpret(fit_vigor_longi)
+
+# Print the residual matrix
+residuals(fit_vigor_longi, type="standardized")
+
+# Print the modification indices
+modindices(fit_vigor_longi)
+
+```

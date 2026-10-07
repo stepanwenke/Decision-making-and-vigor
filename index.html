@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Do not cache this website -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
+    <title>Decision-Making Battery</title>
+
+    <!-- Load libraries -->
+    <script src="https://unpkg.com/jspsych@7.3.3"></script>
+
+    <!-- Load jsPsych plug-ins -->
+    <script src="tasks/go-nogo-robotTask-positive/js/plugin-pgng-trial.js?version=2.0"></script>
+    <script src="tasks/go-nogo-robotTask-positive/js/plugin-pgng-instructions.js"></script>
+    <script src="tasks/go-nogo-robotTask-positive/js/plugin-pgng-comprehension.js"></script>
+    <script src="tasks/go-nogo-robotTask-positive/js/plugin-screen-check.js"></script>
+    <script src="tasks/go-nogo-robotTask-positive/js/plugin-survey-text.js"></script>
+    <script src="tasks/go-nogo-robotTask-positive/js/plugin-survey-multi-choice.js"></script>
+    <script src="tasks/go-nogo-robotTask-positive/js/init-jspsych.js"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-instructions@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-fullscreen@1.1.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-multi-choice@1.0.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-multi-choice@1.0.0/dist/index.browser.min.js"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey@0.2.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-preload@1.1.2/dist/index.browser.min.js"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-preload@1.1.2/dist/index.browser.min.js"></script>
+
+    <!--General js-->
+    <script src="general.js"></script>
+
+    <!--Load tasks-->
+    <script src="tasks/breakTrial.js"></script>
+    <script src="tasks/generalInstructions.js"></script>
+    <script src="tasks/endTrial.js"></script>
+
+    <!-- Go-NoGo Robot Task -->
+    <!--     <script src="tasks/go-nogo-robotTask/js/pgng-runsheets.js"></script>
+    <script src="tasks/go-nogo-robotTask/js/pgng-experiment.js?version=2.0"></script>
+    <script src="tasks/go-nogo-robotTask/js/pgng-instructions.js"></script>
+    <script src="tasks/go-nogo-robotTask/gonogoTask.js"></script>
+    <script src="tasks/go-nogo-robotTask/css/test-styles.js"></script> -->
+
+    <!-- Go-NoGo Robot Task (only positive valence) -->
+    <script src="tasks/go-nogo-robotTask-positive/js/pgng-runsheets.js"></script>
+    <script src="tasks/go-nogo-robotTask-positive/js/pgng-experiment.js?version=2.0"></script>
+    <script src="tasks/go-nogo-robotTask-positive/js/pgng-instructions.js"></script>
+    <script src="tasks/go-nogo-robotTask-positive/gonogoTaskPositive.js"></script>
+    <script src="tasks/go-nogo-robotTask-positive/css/test-styles.js"></script>
+
+    <!-- Effort -->
+    <script src="tasks/effort/effortTask.js"></script>
+    <script src="tasks/effort/test-styles.js"></script>
+    <script src="tasks/effort/task_structure.js"></script>
+
+    <!-- RLWM -->
+    <script src="tasks/rlwm/rlwmTask.js"></script>
+    <script src="tasks/rlwm/test-styles.js"></script>
+    <script src="tasks/rlwm/stimuli.js"></script>
+
+    <!-- Foraging -->
+    <script src="tasks/foraging/experiment/run_exp/static/js/task.js"></script>
+    <script src="tasks/foraging/experiment/run_exp/static/css/test_styles.js"></script>
+    <script src="tasks/foraging/experiment/run_exp/static/css/test_bootstrap.js"></script>
+    <script src="tasks/foraging/experiment/run_exp/static/js/jsPsych/plugins/plugin-animation.js"></script>
+    <script src="tasks/foraging/experiment/run_exp/static/js/jsPsych/plugins/plugin-survey-html-form.js"></script>
+    <script src="tasks/foraging/experiment/run_exp/static/exp_struc/110017437_best.js" type="text/javascript"></script>
+    <script src="tasks/foraging/experiment/run_exp/static/js/beta_dist.js" type="text/javascript"></script>
+    <script src="tasks/foraging/experiment/run_exp/static/js/marsaglia-polar.js" type="text/javascript"></script>
+
+    <!-- Load general CSS styles -->
+    <script src="styles/breakTrial-styles.js"></script>
+    <script src="styles/generalInstructions-styles.js"></script>
+    <script src="styles/endTrial-styles.js"></script>
+    <link href="https://unpkg.com/jspsych@7.3.3/css/jspsych.css" rel="stylesheet" type="text/css" />
+
+    <!-- Pavlovia -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="pavlovia/jspsych-7-pavlovia-2022.1.1.js"></script>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kablammo&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin&display=swap" rel="stylesheet">
+
+
+
+    <!-- Questionnaires -->
+    <script src="tasks/questionnaires/AMI.js"> </script>
+    <script src="tasks/questionnaires/PANAS.js"> </script>
+    <script src="tasks/questionnaires/ASRM.js"> </script>
+    <script src="tasks/questionnaires/CESD.js"> </script>
+    <script src="tasks/questionnaires/SHPS.js"> </script>
+    <script src="tasks/questionnaires/BIS_BAS.js"> </script>
+    <script src="tasks/questionnaires/PSS.js"> </script>
+
+    <!-- Main task scripts -->
+    <script src="day0.js"></script>
+    <script src="day1.js"></script>
+    <script src="day2.js"></script>
+
+    <!-- Single tasks scripts -->
+    <script src="single tasks/effort_fun.js"></script>
+
+    <script>
+        // Get the current URL
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Get the value of the 'day' parameter
+        const day = urlParams.get('day');
+        const task = urlParams.get('task');
+
+        //initialize jsPsych
+        let jsPsych = initJsPsych({
+            on_finish: function () {
+                //window.location = experimentsOrder[taskNumber] + tokenurl;
+            }
+        });
+
+        // Initialize general timeline
+        var general_timeline = [];
+
+        //initialize Pavlovia plugin
+        let pavlovia_init = {
+            type: jsPsychPavlovia,
+            command: "init",
+            setPavloviaInfo: function (info) {
+                //console.log('initializing pavlovia: ', info);
+                pavloviaInfo = info;
+                //alert('Pavlovia is initialized');
+            }
+        };
+        //general_timeline.push(pavlovia_init);
+        if (task === "effort") {
+            console.log("running effort task");
+            let timeline_effort = effortTask(1); // Effort task
+            jsPsych.run(timeline_effort);
+        } else if (task === "rlwm") {
+            console.log("running rlwm task");
+            let timeline_rlwm = rlwmTask(1); // RLWM task
+            jsPsych.run(timeline_rlwm);
+        } else if (task === "foraging") {
+            console.log("running foraging task");
+            let timeline_foraging = foragingTask(1); // Foraging task
+            jsPsych.run(timeline_foraging);
+        } else if (task === "gonogo") {
+            console.log("running gonogo task");
+            let timeline_gonogo = gonogoTaskPositive(1); // Go-NoGo Robot Task
+            jsPsych.run(timeline_gonogo);
+        } else if (day == 0) {
+            console.log("running day0");
+            day0();
+        } else if (day == 1) {
+            console.log("running day1");
+            day1();
+        } else if (day == 2) {
+            console.log("running day2");
+            day2(); 
+        } else {
+            console.log("day not found");
+        }
+
+    </script>
+
+
+</head>
+
+<body></body>
+
+
+</html>

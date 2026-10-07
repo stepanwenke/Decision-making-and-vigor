@@ -1,0 +1,965 @@
+---
+title: "ICC and FA_pilot"
+author: "Stepan Wenke"
+date: "2024-04-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Libraries and data loading
+
+```{r, echo=FALSE, message=FALSE, results='hide', warning=FALSE}
+library(tidyverse)
+library(correlation)
+library(see)
+library(readr)
+library(psych)
+library(nFactors)
+library(rempsyc)
+library(irr)
+library(mvoutlier)
+library(mice)
+library(ggpubr)
+
+
+# set wd to analysis folder
+script_dir <- dirname(rstudioapi::getActiveDocumentContext()$path)
+if (getwd() != script_dir) {
+  setwd(script_dir)
+} else {
+  message("The script_dir is the same as the current working directory.")
+}
+
+
+# all_excluded_both_days <- c(
+#   "6697c39cfbf1e3381e6ee45c", "65956ab743aa1e8fe002ba3b", "669a6bba1fd09527cf41717a",
+#   "65b26a99fe500245f7a7c750", "677009b08130c3028f6a8a6d", "6161cb3de3d274978d46575b",
+#   "65fc95c627592d85499ae358", "655f8bf6de805f7bd81e5811", "665c5d94303fdf202ac9ded0",
+#   "65fb34c4df61f03ce0dd6dd9", "5d66b4f503b0d900195ca627", "676d40e2915d059bf7ef62e8",
+#   "67d095bc257ecc840642912e", "66645dfa2639fc47c5bca0a6", "67826c0cd5858c9d420da7ff",
+#   "67d0581ffe3bbe5188426aff", "5eef7da8a4868b05c902ef2d", "5fff2877a99bcb65a14a223c",
+#   "67f3619e16d4ca195fbd1bd0", "67e5cf90b79d0874e1cf16b0", "571a78f06a1c6300114b8d80",
+#   "5af82cf9e066a40001136ace", "67e2a5b83621fdee51b6277e", "66ce541cd8da920539a1c3cc",
+#   "6741ce8667002c96f0362d34", "5e4066ed9eec8d2a184e4ff4", "63d9d5072e083033fc895df1",
+#   "67d9a91f56a568412eecda60", "67f6a640d2046b13fcf33328", "66083cd0a45e1ce399e6a85f",
+#   "67851f4cba98f2087f182764", "67dc135e06eee79a0b0324ef", "604fa685e33606f9a0ee8189",
+#   "609bfd97a7c95881330491d4", "6122f45e2e93a3ff9a7b7a5d", "64feeabd355b506d0512d862",
+#   "6606b31155457e4f162ecf5a", "6776b99a8215d150863a71b4", "60e0dc6be0772b7dfdad9b2c",
+#   "67f65a16d76fa76c28091ede", "675436e14d7ef1173a74a5b8", "6774f9e03114a09130a1e78f",
+#   "5a77529ff49c9a0001f2fdbd", "672879d614dce67b8c3090ea", "67f7c74584da18f7cd5fceeb",
+#   "60d9dfd4dcc09cf57dc92cb1", "5bf3199ebe7c7300017b710a", "5c549c6372fd9000018b5968",
+#   "5e5c993cd0394c474f7cc502", "5fabca68273dd403ab40e361", "5fed47cfcb429d79af4f8ded",
+#   "65651805d1afb42ba1a55476", "667971a555af1f83d3f29ae7", "673bf9c0212c1ae07ff6c22e",
+#   "67cd50f22f22938860f85a66"
+# )
+# 
+# exclude_ids <- all_excluded_both_days
+exclude_ids <- c()
+
+```
+
+# ICC day 1 and day 2 (with outliers; loadings method)
+
+Day 1:
+- FA is made for day 1
+- Loadings are obtained
+- Factor scores are obtained
+
+Day 2:
+- Factors scores are obtained given the parameters from day 2 and loadings from day 1
+
+```{r}
+# Load the df_1
+df_1_path <- "df_1_with_id.csv"
+df_2_path <- "df_2_with_id.csv"
+
+
+# Toggle dataset here:
+df_1 <- as.data.frame(read.csv(df_1_path, row.names = 1))
+df_1 <- df_1 %>%
+  rename(frgng_exit = foraging_exit_threshold)
+
+# Exclusion of the participants
+df_1 <- df_1[!sub("^output/", "", rownames(df_1)) %in% exclude_ids, ]
+
+# Check if the "id" column exists and drop it if it does
+if ("id" %in% colnames(df_1)) {
+  df_1 <- df_1 %>% select(-id)
+}
+
+df_1_og  <- df_1
+df_1 <- df_1 %>%
+  select(rlwm_alpha, gng_beta, gng_eps, frgng_exit, phys_k)
+
+# df_1_alt <- df_1_og %>%
+#   select(rlwm_alpha, gng_beta, frgng_exit, phys_beta, phys_k)
+# 
+# df_1_alt_eps <- df_1_og %>%
+#   select(rlwm_alpha, gng_beta, gng_eps, frgng_exit, phys_beta, phys_k)
+
+# Do the FA for day 1
+pca_result <- prcomp(df_1_og, scale. = TRUE)
+# df_1_alt <- df_1_og %>%
+#   select(rlwm_alpha, gng_beta, frgng_exit, phys_beta, phys_k)
+# screeplot(pca_result, type = "lines", main = "Scree Plot")
+# factor_num <- 3
+
+fa_res_rotated_full <- factanal(x = df_1_og, factors = factor_num, rotation = "varimax", scores = "regression") #covmat = cor(df_1)
+print(fa_res_rotated_full)
+
+# fa_res_rotated_alt <- factanal(x = df_1_alt, factors = 2, rotation = "varimax", scores = "regression") #covmat = cor(df_1)
+# print(fa_res_rotated_alt)
+
+# fa_res_rotated_alt_eps <- factanal(x = df_1_alt_eps, factors = 2, rotation = "varimax", scores = "regression") #covmat = cor(df_1)
+# print(fa_res_rotated_alt_eps)
+
+
+### reduced fA ###
+pca_result <- prcomp(df_1, scale. = TRUE)
+screeplot(pca_result, type = "lines", main = "Scree Plot")
+factor_num <- 2
+
+fa_res_rotated <- factanal(x = df_1, factors = factor_num, rotation = "varimax", scores = "regression") #covmat = cor(df_1)
+print(fa_res_rotated)
+
+# Store loadings for the upcoming ICC
+loadings <- fa_res_rotated$loadings[,1:factor_num]
+fa_scores_day1 <- factor.scores(df_1, loadings, method = "Thurstone")
+fa_scores_day1 <- fa_res_rotated$scores
+
+# Get the factor scores only for participants that did the retest
+# Extract the row names of the data frame
+row_names <- row.names(fa_res_rotated$scores)
+
+
+
+# Load the df_2
+df_2_path <- "df_2_with_id.csv"
+
+# Toggle a dataset here:
+df_2 <- as.data.frame(read.csv(df_2_path,row.names = 1))
+
+# Exclusion of the participants
+df_2 <- df_2[!sub("^output/", "", rownames(df_2)) %in% exclude_ids, ]
+
+df_1_retest_pp <- intersect(row.names(df_2), row.names(df_1))
+
+# Subset the factor scores to include only those in df_2
+fa_scores_day1_retest_pp <- fa_res_rotated$score[rownames(fa_res_rotated$score) %in% df_1_retest_pp, ]
+
+# Get only the participants' parameters from day 1 that also did the retest but also those that were excluded on day 1 but not excluded on day 2
+
+#df_1_retest_pp <- df_1[row.names(df_2), , drop = FALSE]
+
+
+# first column is x - remove
+df_2$X <- NULL
+
+df_2 <- df_2 %>%
+  rename(frgng_exit = foraging_exit_threshold)
+
+df_2_og  <- df_2
+df_2 <- df_2 %>%
+  select(rlwm_alpha, gng_beta, gng_eps, frgng_exit, phys_k)
+# 
+# df_2_alt <- df_2_og %>%
+#   select(rlwm_alpha, gng_beta, frgng_exit, phys_beta, phys_k)
+# 
+# df_2_alt_eps <- df_2_og %>%
+#   select(rlwm_alpha, gng_beta, gng_eps, frgng_exit, phys_beta, phys_k)
+
+# Do the FA for day 2
+pca_result <- prcomp(df_2_og, scale. = TRUE)
+screeplot(pca_result, type = "lines", main = "Scree Plot")
+factor_num <- 3
+
+fa_res_rotated_full <- factanal(x = df_2_og, factors = factor_num, rotation = "varimax", scores = "regression") #covmat = cor(df_1)
+print(fa_res_rotated_full)
+
+# fa_res_rotated_alt <- factanal(x = df_2_alt, factors = 2, rotation = "varimax", scores = "regression") #covmat = cor(df_1)
+# print(fa_res_rotated_alt)
+# 
+# fa_res_rotated_alt_eps <- factanal(x = df_2_alt_eps, factors = 2, rotation = "varimax", scores = "regression") #covmat = cor(df_1)
+# print(fa_res_rotated_alt_eps)
+
+### reduced fA ###
+pca_result <- prcomp(df_2, scale. = TRUE)
+screeplot(pca_result, type = "lines", main = "Scree Plot")
+factor_num <- 2
+
+fa_res_rotated <- factanal(x = df_2, factors = factor_num, rotation = "varimax", scores = "regression") #covmat = cor(df_1)
+print(fa_res_rotated)
+
+
+
+# Get factor scores for participants on day 2 given the loadings from day 1
+fa_scores_day2_output <- factor.scores(df_2, loadings, method = "Thurstone")
+fa_scores_day2 <- fa_scores_day2_output$scores
+
+fa_scores_day2_retest_pp <- fa_scores_day2[rownames(fa_scores_day2) %in% df_1_retest_pp, ]
+
+############ Calculate ICC #######################
+factor1 <-  icc(cbind(fa_scores_day1_retest_pp[,1],fa_scores_day2_retest_pp[,1]), model = "oneway", type = "agreement", unit = "single")
+factor2 <-  icc(cbind(fa_scores_day1_retest_pp[,2],fa_scores_day2_retest_pp[,2]), model = "oneway", type = "agreement", unit = "single")
+# factor3 <-  icc(cbind(fa_scores_day1_retest_pp[,3],fa_scores_day2[,3]), model = "oneway", type = "agreement", unit = "single")
+# factor4 <-  icc(cbind(fa_scores_day1_retest_pp[,4],fa_scores_day2[,4]), model = "oneway", type = "agreement", unit = "single")
+
+icc_df <- data.frame(
+  Factor = c("Factor1", "Factor2"),
+  CI_upper = c(factor1$ubound, factor2$ubound),
+  CI_lower = c(factor1$lbound, factor2$lbound),
+  ICC = c(factor1$value, factor2$value)
+)
+
+# icc_df <- data.frame(
+#   Factor = c("Factor1", "Factor2", "Factor3"),
+#   CI_upper = c(factor1$ubound, factor2$ubound, factor3$ubound),
+#   CI_lower = c(factor1$lbound, factor2$lbound, factor3$lbound),
+#   ICC = c(factor1$value, factor2$value, factor3$value)
+# )
+
+# icc_df <- data.frame(
+#   Factor = c("Factor1", "Factor2", "Factor3", "Factor4"),
+#   CI_upper = c(factor1$ubound, factor2$ubound, factor3$ubound, factor4$ubound),
+#   CI_lower = c(factor1$lbound, factor2$lbound, factor3$lbound, factor4$lbound),
+#   ICC = c(factor1$value, factor2$value, factor3$value, factor4$value)
+# )
+
+print(icc_df)
+
+nice_icc <- nice_table(icc_df, title = c("Table 5","ICC Loadings method day 1 and day 2"))
+print(nice_icc, preview = "docx")
+
+```
+# Correlations between the loadings of day 1 and day 2
+
+```{r}
+# Function to perform FA and compute factor loadings correlation
+# df_1 <- df_1_og
+# df_2 <- df_2_og
+
+# Shared participants
+common_ids <- intersect(row.names(df_1), row.names(df_2))
+
+# Filter each df to include only shared participants
+df1_common_full <- df_1 %>% filter(row.names(df_1) %in% common_ids)
+df2_common_full <- df_2 %>% filter(row.names(df_2) %in% common_ids)
+
+
+# Get loadings for the intersection of participants for both days
+df1_common <- df1_common_full %>%
+  select(rlwm_alpha, gng_beta, gng_eps, frgng_exit, phys_k) %>%
+  # Filter out the na row
+  filter(rlwm_alpha != "NA")
+
+df2_common <- df2_common_full %>%
+  select(rlwm_alpha, gng_beta, gng_eps, frgng_exit, phys_k) %>%
+  # Filter out the na row
+  filter(rlwm_alpha != "NA") 
+
+
+compute_fa_and_correlation <- function(df_1, df_2, num_factors) {
+  # Compute FA for the specified number of factors
+  fa_res_rotated_day2 <- factanal(x = df_2, factors = num_factors, rotation = "varimax", scores = "regression")
+  fa_res_rotated_day1 <- factanal(x = df_1, factors = num_factors, rotation = "varimax", scores = "regression")
+  
+  # Extract the factor loadings for both days
+  loadings_day1 <- fa_res_rotated_day1$loadings
+  loadings_day2 <- fa_res_rotated_day2$loadings
+  
+  # Compute correlation between factor loadings for each factor
+  loadings_correlation <- cor(loadings_day1, loadings_day2)
+  
+  # Return the correlation matrix
+  return(loadings_correlation)
+}
+
+# Compute and print the correlation for 4 factors
+# loadings_correlation_4 <- compute_fa_and_correlation(df_1, df_2, num_factors = 4)
+# print("Correlation for 4 factors:")
+# print(loadings_correlation_4)
+# 
+# # # Compute and print the correlation for 3 factors
+# loadings_correlation_3 <- compute_fa_and_correlation(df_1, df_2, num_factors = 3)
+# print("Correlation for 3 factors:")
+# print(loadings_correlation_3)
+
+# Compute and print the correlation for 2 factors
+loadings_correlation_2 <- compute_fa_and_correlation(df1_common, df2_common, num_factors = 2)
+print("Correlation for 2 factors:")
+print(loadings_correlation_2)
+```
+# Reliability between day 0 and day 1 and 2
+
+```{r}
+# Do FA for day 0
+factor_num <- 2
+
+fa_res_rotated_day0 <- factanal(x = scale(df_0), factors = factor_num, rotation = "varimax", scores = "regression") #covmat = cor(df_1)
+print(fa_res_rotated_day0)
+
+# Compute and print the correlation for 2 factors
+df_1_reduced_for_day_0 <- df_1 %>%
+  select(rlwm_alpha, gng_beta, gng_eps, phys_beta, phys_k)
+
+df_2_reduced_for_day_0 <- df_2 %>%
+  select(rlwm_alpha, gng_beta, gng_eps, phys_beta, phys_k)
+
+loadings_correlation_day_1_0 <- compute_fa_and_correlation(df_0, df_1_reduced_for_day_0, num_factors = 2)
+
+loadings_correlation_day_2_0 <- compute_fa_and_correlation(df_0, df_2_reduced_for_day_0, num_factors = 2)
+
+
+print("Correlation for 2 factors:")
+print(loadings_correlation_day_1_0)
+print(loadings_correlation_day_2_0)
+
+```
+
+# Questionnaires and reliability across day 1 and day 2
+
+```{r}
+# questionnaires
+# Load the q_data1
+q_data1_path <- paste(modelling_path, "/questionnaires_processed.csv", sep="")
+q_data1 <- as.data.frame(read.csv(q_data1_path, row.names = 1))
+
+# Only the retest participants
+q_data1 <- q_data1[row_names %in% as.character(retest_pp_indices), ]
+q_data1 <- q_data1[, -4]
+
+# Load the q_data2
+q_data2_path <- paste(modelling_path, "/questionnaires_processed_day2.csv", sep="")
+q_data2 <- as.data.frame(read_csv(q_data2_path))
+
+# Align the indices with day 1
+rownames(q_data2) <- row_names_from_day1
+
+icc_ba_act <- icc(cbind(q_data1[,1], q_data2[,1]), model = "oneway", type = "agreement", unit = "single")
+icc_emot_sens <- icc(cbind(q_data1[,2], q_data2[,2]), model = "oneway", type = "agreement", unit = "single")
+icc_soc_mot <- icc(cbind(q_data1[,3], q_data2[,3]), model = "oneway", type = "agreement", unit = "single")
+icc_pos_aff <- icc(cbind(q_data1[,4], q_data2[,4]), model = "oneway", type = "agreement", unit = "single")
+icc_neg_aff <- icc(cbind(q_data1[,5], q_data2[,5]), model = "oneway", type = "agreement", unit = "single")
+
+# print(icc_ba_act)
+# print(icc_emot_sens)
+# print(icc_soc_mot)
+# print(icc_pos_aff)
+# print(icc_neg_aff)
+
+q_icc_df <- data.frame(
+  Variable = c("icc_ba_act", "icc_emot_sens", "icc_soc_mot","icc_pos_aff","icc_neg_aff"),
+  UB = c(icc_ba_act$ubound, icc_emot_sens$ubound, icc_soc_mot$ubound,icc_pos_aff$ubound, icc_neg_aff$ubound),
+  LB = c(icc_ba_act$lbound, icc_emot_sens$lbound, icc_soc_mot$lbound,icc_pos_aff$lbound, icc_neg_aff$lbound),
+  ICC = c(icc_ba_act$value, icc_emot_sens$value, icc_soc_mot$value,icc_pos_aff$value, icc_neg_aff$value)
+)
+
+print(q_icc_df)
+```
+
+  ## Comparison of FA for day 1 and day 2
+
+```{r}
+fa_res_rotated_day2 <- factanal(x = df_2, factors = 3, rotation = "varimax", scores = "regression")
+fa_res_rotated <- factanal(x = df_1, factors = 3, rotation = "varimax", scores = "regression")
+
+print(fa_res_rotated)
+print(fa_res_rotated_day2)
+```
+
+## Reliability of parameters for day 1 (only those who did retest) and day 2
+
+```{r}
+# Perform ICC analysis for each variable and store the results
+# Get the common column names between df_1_retest_pp and df_2
+variables <- intersect(names(df_1), names(df_2))
+# variables <- intersect(names(df_1_og), names(df_2_og))
+
+# Filter out only row names that are row names of df_2_og in df_1_og
+# df_1_og_only_2 <- df_1_og[row.names(df_2_og), variables, drop = FALSE]
+
+
+# List to store ICC results
+icc_results <- list()
+
+# Loop through each variable and calculate ICC
+for (variable in variables) {
+  icc_result <- icc(cbind(df1_common_full[[variable]], df2_common_full[[variable]]), 
+                    model = "twoway", type = "agreement", unit = "single")
+  
+  icc_results[[variable]] <- list(Variable = variable, 
+                                  LB = round(icc_result$lbound, 2), 
+                                  UB = round(icc_result$ubound, 2),
+                                  ICC = round(icc_result$value, 2))
+}
+
+# Convert list to dataframe
+icc_df <- do.call(rbind, icc_results)
+icc_df <- as.data.frame(icc_df, stringsAsFactors = FALSE)
+
+# Fix the Variable column
+icc_df$Variable <- rownames(icc_df)  # Use row names as the correct variable names
+rownames(icc_df) <- NULL  # Remove row names after extraction
+
+# Convert numeric columns
+icc_df$LB <- as.numeric(icc_df$LB)
+icc_df$UB <- as.numeric(icc_df$UB)
+icc_df$ICC <- as.numeric(icc_df$ICC)
+
+# Create and print the table
+nice_icc <- nice_table(icc_df, title = c("Table 6", "ICC of parameters day 1 & 2"))
+
+# Print preview in Word
+print(nice_icc, preview = "docx")
+
+
+
+```
+## Scatter plots of parameters
+```{r}
+library(reshape2)
+
+
+# Get the list of common columns
+common_columns <- intersect(names(df_2), names(df_1_retest_pp))
+
+# Create a combined data frame
+combined_df <- data.frame()
+
+for (col in common_columns) {
+  temp_df <- data.frame(
+    df_2_value = df_2[[col]],
+    df_1_retest_pp_value = df_1_retest_pp[[col]],
+    variable = col
+  )
+  
+  # Calculate Spearman correlation coefficient
+  corr_coef <- cor(df_2[[col]], df_1_retest_pp[[col]], method = "spearman", use = "complete.obs")
+  temp_df$corr_coef <- round(corr_coef, 2)
+  
+  combined_df <- rbind(combined_df, temp_df)
+}
+
+# Plotting with ggplot2
+plot <- ggplot(combined_df, aes(x = df_2_value, y = df_1_retest_pp_value)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "blue") +
+  facet_wrap(~ variable, scales = "free") +
+  labs(title = "Scatter Plots with Spearman Correlation Coefficients") +
+  theme_minimal() +
+  geom_text(aes(label = paste("r =", corr_coef)), x = Inf, y = Inf, hjust = 1.1, vjust = 2, size = 3, color = "red", check_overlap = TRUE)
+
+print(plot)
+
+
+
+```
+## Outlier detection
+
+```{r fig.width=15, fig.height=10}
+## Day 1 ##
+# Calculate z-scores for each column
+z_df_1 <- as.data.frame(scale(df_1))
+z_df_2 <- as.data.frame(scale(df_2))
+
+# Mahalanobis distance for df_1
+md_1 <- mahalanobis(z_df_1, colMeans(z_df_1), cov(z_df_1))
+
+# Mahalanobis distance for df_2
+md_2 <- mahalanobis(z_df_2, colMeans(z_df_2), cov(z_df_2))
+
+# Critical chi-square value for 95% confidence
+cutoff_1 <- qchisq(0.95, df = ncol(z_df_1))
+cutoff_2 <- qchisq(0.95, df = ncol(z_df_2))
+
+# Find outliers
+outliers_1 <- which(md_1 > cutoff_1)
+outliers_2 <- which(md_2 > cutoff_2)
+
+# View outliers in original data
+df_1_outliers <- df_1[outliers_1, ]
+df_2_outliers <- df_2[outliers_2, ]
+
+# Optional: Add a column marking outliers
+# df_1$outlier <- md_1 > cutoff_1
+# df_2$outlier <- md_2 > cutoff_2
+
+########## older code ##########
+
+# Identify outliers based on z-scores
+outliers_df_1 <- which(abs(z_df_1) > 3, arr.ind = TRUE)
+outliers_df_1 <- outliers_df_1[order(outliers_df_1[,1]),]
+
+# Extract row and column indices of outliers
+z_df_1_long <- pivot_longer(z_df_1, cols = everything(), names_to = "parameter", values_to = "z")
+#z_df_1_long$participant <- rep(1:nrow(df_1), each = ncol(df_1))
+z_df_1_long$participant <- rep(rownames(z_df_1), each = ncol(df_1))
+
+
+# Create the scatter plot with abline and colored points
+ggplot(z_df_1_long, aes(x = parameter, y = z, color = abs(z) > 3)) +
+  geom_point() +
+  geom_abline(intercept = 3, slope = 0, linetype = "dashed") +
+  geom_abline(intercept = -3, slope = 0, linetype = "dashed") +
+  geom_text(data = z_df_1_long[z_df_1_long$z > 3 | z_df_1_long$z < -3, ], aes(label = participant), vjust = -0.5, hjust = 0.5, position = position_jitter(width = 0.5, height = 0.1), show.legend = FALSE) +
+  scale_color_manual(values = c("black", "red"), labels = c("Below 3", "Above 3"))
+
+## Day 2 ##
+## TODO: make the indices to be the same across day 1 and day 2
+### Construct the df_2 without the outliers
+outliers_df_2 <- which(abs(z_df_2) > 3, arr.ind = TRUE)
+outliers_df_2 <- outliers_df_2[order(outliers_df_2[,1]),]
+
+# Extract row and column indices of outliers
+z_df_2_long <- pivot_longer(z_df_2, cols = everything(), names_to = "parameter", values_to = "z")
+z_df_2_long$participant <- rep(rownames(z_df_2), each = ncol(df_2))
+
+# Create the scatter plot with abline and colored points
+ggplot(z_df_2_long, aes(x = parameter, y = z, color = abs(z) > 3)) +
+  geom_point() +
+  geom_abline(intercept = 3, slope = 0, linetype = "dashed") +
+  geom_abline(intercept = -3, slope = 0, linetype = "dashed") +
+  geom_text(data = z_df_2_long[z_df_2_long$z > 3 | z_df_2_long$z < -3, ], aes(label = participant), vjust = -0.5, hjust = 0.5, position = position_jitter(width = 0.5, height = 0.1), show.legend = FALSE) +
+  scale_color_manual(values = c("black", "red"), labels = c("Below 3", "Above 3"))
+
+# Selecting a parameter
+#colnames(df_1[15])
+```
+
+## FA without outliers
+
+```{r}
+## day 1 ##
+outlier_id_df_1 <- unique(c(outliers_df_1[,1]))
+#outlier_id_df_1 <- unique(rownames(outliers_df_1))
+
+
+
+# df_1 without the outliers
+no_out_df_1 <- df_1
+  no_out_df_1 <- no_out_df_1[-c(outlier_id_df_1),]
+
+# Scree plot PCA
+no_out_pca_res <- prcomp(no_out_df_1, scale. = TRUE)
+plot(no_out_pca_res, type = "l")
+
+# summary
+summary_no_out_pca_res <- summary(no_out_pca_res)
+# output: 
+# SD of each component, proportion of variance explained by each component, and the proportion of variance explained
+
+# New function
+nComponents_no_out_pca_res <- nCng(no_out_pca_res$sdev^2) # squared st dev are the eigenvalues
+nFactors_no_out_pca_res <- nComponents_no_out_pca_res$nFactors
+print(nFactors_no_out_pca_res)
+
+# FA no outliers
+no_out_fa_res_rotated <- factanal(x = no_out_df_1, factors = 3, rotation = "varimax", scores = "regression")
+print(no_out_fa_res_rotated)
+
+## day 2 ##
+outlier_id_df_2 <- unique(c(outliers_df_2[,1]))
+
+no_out_df_2 <- df_2
+no_out_df_2 <- no_out_df_2[-c(outlier_id_df_2),]
+
+# Scree plot PCA
+no_out_pca_res_df_2 <- prcomp(no_out_df_2, scale. = TRUE)
+plot(no_out_pca_res_df_2, type = "l")
+
+# summary
+summary_no_out_pca_res_df_2 <- summary(no_out_pca_res_df_2)
+# output: 
+# SD of each component, proportion of variance explained by each component, and the proportion of variance explained
+
+# New function
+nComponents_no_out_pca_res_df_2 <- nCng(no_out_pca_res_df_2$sdev^2) # squared st dev are the eigenvalues
+nFactors_no_out_pca_res_df_2 <- nComponents_no_out_pca_res_df_2$nFactors
+print(nFactors_no_out_pca_res_df_2)
+
+# FA no outliers
+no_out_fa_res_rotated_df_2 <- factanal(x = no_out_df_2, factors = 3, rotation = "varimax", scores = "regression")
+print(no_out_fa_res_rotated_df_2)
+
+```
+
+## No outliers ICC: day 1 and day 2 (without outliers; loadings method)
+
+```{r}
+# Remove the participants that did only the first run or are outliers
+indices_df_1 <- row.names(no_out_df_1) # outliers during the first day
+indices_df_2 <- row.names(no_out_df_2) # outliers during the second day
+
+desired_indices <- intersect(indices_df_1, indices_df_2)
+
+# Clean parameter df which contain the intersection of test-retest no-outlier participants
+clean_no_out_df_2 <- df_2[row.names(df_2) %in% desired_indices,]
+clean_no_out_df_1 <- df_1[row.names(df_1) %in% desired_indices,]
+
+### No outlier reliability test using day 1 loadings
+# Get factor scores for participants on day 2 given the loadings from day 1
+no_out_fa_scores_day2_output <- factor.scores(clean_no_out_df_2, no_out_fa_res_rotated$loadings, method = "Thurstone")
+no_out_fa_scores_day2 <- no_out_fa_scores_day2_output$scores
+no_out_fa_scores_day1 <- no_out_fa_res_rotated$scores
+
+# Find the common row indices between day 1 and day 2
+common_indices <- intersect(row.names(no_out_fa_scores_day1), row.names(no_out_fa_scores_day2))
+
+# Subset day 1 data frame based on common indices
+no_out_fa_scores_day1_retest_pp <- no_out_fa_scores_day1[row.names(no_out_fa_scores_day1) %in% common_indices, ]
+
+# ICC for factor scores of day 1 and day 2 given loadings of day 1
+no_out_factor1 <-  icc(cbind(no_out_fa_scores_day1_retest_pp[,1],no_out_fa_scores_day2[,1]), model = "oneway", type = "agreement", unit = "single")
+no_out_factor2 <-  icc(cbind(no_out_fa_scores_day1_retest_pp[,2],no_out_fa_scores_day2[,2]), model = "oneway", type = "agreement", unit = "single")
+no_out_factor3 <-  icc(cbind(no_out_fa_scores_day1_retest_pp[,3],no_out_fa_scores_day2[,3]), model = "oneway", type = "agreement", unit = "single")
+# print(no_out_factor1)
+# print(no_out_factor2)
+# print(no_out_factor3)
+
+no_out_icc_df <- data.frame(
+  Factor = c("Factor1", "Factor2", "Factor3"),
+  UB = c(no_out_factor1$ubound, no_out_factor2$ubound, no_out_factor3$ubound),
+  LB = c(no_out_factor1$lbound, no_out_factor2$lbound, no_out_factor3$lbound),
+  ICC = c(no_out_factor1$value, no_out_factor2$value, no_out_factor3$value)
+)
+print(no_out_icc_df)
+```
+
+## No outliers: Reliability of parameters for day 1 (only those who did retest) and day 2
+
+```{r, echo=FALSE}
+# ICC for the parameters of day 1 and day 2 given the retest and outlier exclusion
+# List to store ICC results for each variable
+no_out_icc_results <- list()
+
+for (i in seq_along(variables)) {
+  variable <- variables[i]
+  icc_result <- icc(cbind(clean_no_out_df_1[, i], clean_no_out_df_2[, i]), 
+                    model = "oneway", type = "agreement", unit = "single")
+  no_out_icc_results[[variable]] <- list(Variable = variable, 
+                                  LB = round(icc_result$lbound, 2), 
+                                  UB = round(icc_result$ubound, 2),
+                                  ICC = round(icc_result$value, 2))
+}
+
+# Convert list to dataframe
+no_out_icc_df <- do.call(rbind, no_out_icc_results)
+print(no_out_icc_df)
+```
+## Imputing outliers
+
+```{r, echo=FALSE,message=FALSE, results='hide', warning=FALSE}
+### Impute the NAs ###
+
+## Day 1
+# Create a new dataframe to store the modified values
+NAs_out_df_1 <- df_1
+outliers_df_1 <- as.data.frame(outliers_df_1)
+
+# Replace the outlier values with NA
+for (i in 1:nrow(outliers_df_1)) {
+  NAs_out_df_1[outliers_df_1$row[i], outliers_df_1$col[i]] <- NA
+}
+
+# Perform multiple imputation using mice
+imputed_out_df_1 <- mice(NAs_out_df_1, m = 5, maxit = 50, method = 'pmm', printFlag = FALSE)
+
+# Get the completed data
+compl_imputed_out_df_1 <- complete(imputed_out_df_1)
+
+# Preserve original row names
+rownames(compl_imputed_out_df_1) <- rownames(df_1)
+
+## Day 2
+# Create a new dataframe to store the modified values
+NAs_out_df_2 <- df_2
+outliers_df_2 <- as.data.frame(outliers_df_2)
+
+# Replace the outlier values with NA
+for (i in 1:nrow(outliers_df_2)) {
+  NAs_out_df_1[outliers_df_2$row[i], outliers_df_2$col[i]] <- NA
+}
+
+# Perform multiple imputation using mice
+imputed_out_df_2 <- mice(NAs_out_df_2, m = 5, maxit = 50, method = 'pmm', printFlag = FALSE)
+
+# Get the completed data
+compl_imputed_out_df_2 <- complete(imputed_out_df_2)
+
+# Preserve original row names
+rownames(compl_imputed_out_df_2) <- rownames(df_2)
+```
+## FA on imputed outliers
+```{r}
+## Day 1
+# Scree plot PCA
+imputed_out_pca_res <- prcomp(compl_imputed_out_df_1, scale. = TRUE)
+plot(imputed_out_pca_res, type = "l")
+
+# summary
+summary_imputed_out_pca_res <- summary(imputed_out_pca_res)
+# output: 
+# SD of each component, proportion of variance explained by each component, and the proportion of variance explained
+
+# New function
+nComponents_imputed_out_pca_res <- nCng(imputed_out_pca_res$sdev^2) # squared st dev are the eigenvalues
+nFactors_imputed_out_pca_res <- nComponents_imputed_out_pca_res$nFactors
+
+# FA no outliers
+imputed_out_fa_res_rotated <- factanal(x = compl_imputed_out_df_1, factors = 3, rotation = "varimax", scores = "regression")
+print(no_out_fa_res_rotated)
+
+## Day 2
+# Scree plot PCA
+imputed_out_pca_res_day2 <- prcomp(compl_imputed_out_df_2, scale. = TRUE)
+plot(imputed_out_pca_res_day2, type = "l")
+
+# summary
+summary_imputed_out_pca_res_day2 <- summary(imputed_out_pca_res_day2)
+# output: 
+# SD of each component, proportion of variance explained by each component, and the proportion of variance explained
+
+# New function
+nComponents_imputed_out_pca_res_day2 <- nCng(imputed_out_pca_res_day2$sdev^2) # squared st dev are the eigenvalues
+nFactors_imputed_out_pca_res_day2 <- nComponents_imputed_out_pca_res_day2$nFactors
+
+# FA no outliers
+imputed_out_fa_res_rotated_day2 <- factanal(x = compl_imputed_out_df_2, factors = 3, rotation = "varimax", scores = "regression")
+print(imputed_out_fa_res_rotated_day2)
+```
+## Imputed outliers ICC: day 1 and day 2 (loadings method) 
+
+```{r}
+# Remove the participants that did only the first run or are outliers
+imputed_indices_df_1 <- row.names(compl_imputed_out_df_1) # outliers during the first day
+imputed_indices_df_2 <- row.names(compl_imputed_out_df_2) # outliers during the second day
+
+imputed_desired_indices <- intersect(imputed_indices_df_1, imputed_indices_df_2)
+
+# Clean parameter df which contain the intersection of test-retest no-outlier participants
+clean_imputed_out_df_2 <- compl_imputed_out_df_2[row.names(compl_imputed_out_df_2) %in% imputed_desired_indices,]
+clean_imputed_out_df_1 <- compl_imputed_out_df_1[row.names(compl_imputed_out_df_1) %in% imputed_desired_indices,]
+
+### No outlier reliability test using day 1 loadings
+# Get factor scores for participants on day 2 given the loadings from day 1
+imputed_out_fa_scores_day2_output <- factor.scores(clean_imputed_out_df_2, imputed_out_fa_res_rotated$loadings, method = "Thurstone")
+imputed_out_fa_scores_day2 <- imputed_out_fa_res_rotated_day2$scores
+imputed_out_fa_scores_day1 <- imputed_out_fa_res_rotated$scores
+
+# Find the common row indices between day 1 and day 2
+common_indices <- intersect(row.names(imputed_out_fa_scores_day1), row.names(imputed_out_fa_scores_day2))
+
+# Subset day 1 data frame based on common indices
+imputed_out_fa_scores_day1 <- imputed_out_fa_scores_day1[row.names(imputed_out_fa_scores_day1) %in% common_indices, ]
+
+# ICC for factor scores of day 1 and day 2 given loadings of day 1
+imputed_out_factor1 <-  icc(cbind(imputed_out_fa_scores_day1[,1],imputed_out_fa_scores_day2[,1]), model = "oneway", type = "agreement", unit = "single")
+imputed_out_factor2 <-  icc(cbind(imputed_out_fa_scores_day1[,2],imputed_out_fa_scores_day2[,2]), model = "oneway", type = "agreement", unit = "single")
+imputed_out_factor3 <-  icc(cbind(imputed_out_fa_scores_day1[,3],imputed_out_fa_scores_day2[,3]), model = "oneway", type = "agreement", unit = "single")
+# print(no_out_factor1)
+# print(no_out_factor2)
+# print(no_out_factor3)
+
+imputed_out_icc_df <- data.frame(
+  Factor = c("Factor1", "Factor2", "Factor3"),
+  UB = c(imputed_out_factor1$ubound, imputed_out_factor2$ubound, imputed_out_factor3$ubound),
+  LB = c(imputed_out_factor1$lbound, imputed_out_factor2$lbound, imputed_out_factor3$lbound),
+  ICC = c(imputed_out_factor1$value, imputed_out_factor2$value, imputed_out_factor3$value)
+)
+print(imputed_out_icc_df)
+```
+## Imputed outliers: reliability of parameters
+```{r, echo=FALSE}
+# ICC for the parameters of day 1 and day 2 given the retest and outlier exclusion
+# List to store ICC results for each variable
+imputed_out_icc_results <- list()
+
+for (i in seq_along(variables)) {
+  variable <- variables[i]
+  icc_result <- icc(cbind(clean_imputed_out_df_1[, i], clean_imputed_out_df_2[, i]), 
+                    model = "oneway", type = "agreement", unit = "single")
+  imputed_out_icc_results[[variable]] <- list(Variable = variable, 
+                                  LB = round(icc_result$lbound, 2), 
+                                  UB = round(icc_result$ubound, 2),
+                                  ICC = round(icc_result$value, 2))
+}
+
+# Convert list to dataframe
+imputed_out_icc_df <- do.call(rbind, imputed_out_icc_results)
+print(imputed_out_icc_df)
+```
+## 2 factors and 8 params: with outliers
+
+```{r}
+reduced_df_1 <- df_1[,c(1,2,6,7,8,11,12,15)]
+reduced_df_2 <- df_2[,c(1,2,6,7,8,11,12,15)]
+
+# Scree plot PCA - day 1
+reduced_pca_res <- prcomp(reduced_df_1, scale. = TRUE)
+plot(reduced_pca_res, type = "l")
+
+# summary
+summary_reduced_pca_res <- summary(reduced_pca_res)
+# output: 
+# SD of each component, proportion of variance explained by each component, and the proportion of variance explained
+
+# New function
+nComponents_reduced_pca_res <- nCng(reduced_pca_res$sdev^2) # squared st dev are the eigenvalues
+nFactors_reduced_pca_res <- nComponents_reduced_pca_res$nFactors
+print(nFactors_reduced_pca_res)
+
+
+reduced_fa_res_rotated <- factanal(x = reduced_df_1, factors = 2, rotation = "varimax", scores = "regression")
+print(reduced_fa_res_rotated)
+
+# Scree plot PCA - day 2
+reduced_pca_res_day2 <- prcomp(reduced_df_2, scale. = TRUE)
+plot(reduced_pca_res_day2, type = "l")
+
+# summary
+summary_reduced_pca_res_day2 <- summary(reduced_pca_res_day2)
+# output: 
+# SD of each component, proportion of variance explained by each component, and the proportion of variance explained
+
+# New function
+nComponents_reduced_pca_res_day2 <- nCng(reduced_pca_res_day2$sdev^2) # squared st dev are the eigenvalues
+nFactors_reduced_pca_res_day2 <- nComponents_reduced_pca_res_day2$nFactors
+print(nFactors_reduced_pca_res_day2)
+
+reduced_fa_res_rotated_day2 <- factanal(x = reduced_df_2, factors = 2, rotation = "varimax", scores = "regression")
+print(reduced_fa_res_rotated_day2)
+```
+## 2 factors and 8 params with outliers: ICC (loadings method)
+
+```{r}
+# get the intersection of rownames from reduced_df_1 and reduced_df_2
+reduced_fa_scores_day2_output <- factor.scores(reduced_df_2, reduced_fa_res_rotated$loadings, method = "Thurstone")
+reduced_fa_scores_day2 <- reduced_fa_scores_day2_output$scores
+
+reduced_fa_scores <- reduced_fa_res_rotated$scores
+
+# Find the common row indices between day 1 and day 2
+common_indices <- intersect(row.names(reduced_fa_scores_day2), row.names(reduced_fa_scores))
+
+# Subset day 1 data frame based on common indices
+reduced_fa_scores_day1_retest_pp <- reduced_fa_scores[row.names(reduced_fa_scores) %in% common_indices, ]
+
+# ICC for factor scores of day 1 and day 2 given loadings of day 1
+reduced_factor1 <-  icc(cbind(reduced_fa_scores_day1_retest_pp[,1],reduced_fa_scores_day2[,1]), model = "oneway", type = "agreement", unit = "single")
+reduced_factor2 <-  icc(cbind(reduced_fa_scores_day1_retest_pp[,2],reduced_fa_scores_day2[,2]), model = "oneway", type = "agreement", unit = "single")
+
+reduced_icc_df <- data.frame(
+  Factor = c("Factor1", "Factor2"),
+  UB = c(reduced_factor1$ubound, reduced_factor2$ubound),
+  LB = c(reduced_factor1$lbound, reduced_factor2$lbound),
+  ICC = c(reduced_factor1$value, reduced_factor2$value)
+)
+print(reduced_icc_df)
+
+```
+## 2 factors and 8 params with outliers: ICC (params reliabilty)
+```{r}
+# Subset day 1 data frame based on common indices
+reduced_df_1_retest_pp <- reduced_df_1[row.names(reduced_df_1) %in% common_indices, ]
+
+# List to store ICC results for each variable
+icc_results <- list()
+
+# Perform ICC analysis for each variable and store the results
+variables <- c("icc_exit_thresh", "icc_rlwm_alpha",
+               "icc_rlwm_rho", "icc_gng_alpha_rew", "icc_gng_alpha_pun", 
+               "icc_gng_eps_rew", "icc_gng_eps_pun", 
+               "icc_phys_k")
+
+
+for (i in seq_along(variables)) {
+  variable <- variables[i]
+  icc_result <- icc(cbind(reduced_df_1_retest_pp[, i], reduced_df_2[, i]), 
+                    model = "oneway", type = "agreement", unit = "single")
+  icc_results[[variable]] <- list(Variable = variable, 
+                                  LB = round(icc_result$lbound, 2), 
+                                  UB = round(icc_result$ubound, 2),
+                                  ICC = round(icc_result$value, 2))
+}
+
+# Convert list to dataframe
+icc_df <- do.call(rbind, icc_results)
+print(icc_df)
+```
+## 2 factors and 8 params with outliers: outlier detection
+```{r,fig.width=15, fig.height=10}
+## Day 1 ##
+# Calculate z-scores for each column
+z_reduced_df_1 <- as.data.frame(scale(reduced_df_1))
+z_reduced_df_2 <- as.data.frame(scale(reduced_df_2))
+
+# Identify outliers based on z-scores
+outliers_reduced_df_1 <- which(abs(z_reduced_df_1) > 3.29, arr.ind = TRUE)
+outliers_reduced_df_1 <- outliers_reduced_df_1[order(outliers_reduced_df_1[,1]),]
+
+# Extract row and column indices of outliers
+z_reduced_df_1_long <- pivot_longer(z_reduced_df_1, cols = everything(), names_to = "parameter", values_to = "z")
+#z_df_1_long$participant <- rep(1:nrow(df_1), each = ncol(df_1))
+z_reduced_df_1_long$participant <- rep(rownames(z_reduced_df_1), each = ncol(reduced_df_1))
+
+
+# Create the scatter plot with abline and colored points
+ggplot(z_reduced_df_1_long, aes(x = parameter, y = z, color = abs(z) > 3.29)) +
+  geom_point() +
+  geom_abline(intercept = 3.29, slope = 0, linetype = "dashed") +
+  geom_abline(intercept = -3.29, slope = 0, linetype = "dashed") +
+  geom_text(data = z_reduced_df_1_long[z_reduced_df_1_long$z > 3.29 | z_reduced_df_1_long$z < -3.29, ], aes(label = participant), vjust = -0.5, hjust = 0.5, position = position_jitter(width = 0.5, height = 0.1), show.legend = FALSE) +
+  scale_color_manual(values = c("black", "red"), labels = c("Below 3.29", "Above 3.29"))
+
+## Day 2 ##
+## TODO: make the indices to be the same across day 1 and day 2
+### Construct the df_2 without the outliers
+outliers_reduced_df_2 <- which(abs(z_reduced_df_2) > 3.29, arr.ind = TRUE)
+outliers_reduced_df_2 <- outliers_reduced_df_2[order(outliers_reduced_df_2[,1]),]
+
+# Extract row and column indices of outliers
+z_reduced_df_2_long <- pivot_longer(z_reduced_df_2, cols = everything(), names_to = "parameter", values_to = "z")
+z_reduced_df_2_long$participant <- rep(rownames(z_reduced_df_2), each = ncol(reduced_df_2))
+
+# Create the scatter plot with abline and colored points
+ggplot(z_reduced_df_2_long, aes(x = parameter, y = z, color = abs(z) > 3.29)) +
+  geom_point() +
+  geom_abline(intercept = 3.29, slope = 0, linetype = "dashed") +
+  geom_abline(intercept = -3.29, slope = 0, linetype = "dashed") +
+  geom_text(data = z_reduced_df_2_long[z_reduced_df_2_long$z > 3.29 | z_reduced_df_2_long$z < -3.29, ], aes(label = participant), vjust = -0.5, hjust = 0.5, position = position_jitter(width = 0.5, height = 0.1), show.legend = FALSE) +
+  scale_color_manual(values = c("black", "red"), labels = c("Below 3.29", "Above 3.29"))
+```
+
+
+## Calculate multivariete outliers
+
+
+```{r eval=FALSE, include=FALSE}
+
+maha_df_1 <- as.data.frame(mahalanobis(df_1, colMeans(df_1), cov(df_1)))
+maha_df_2 <-  mahalanobis(df_2, colMeans(df_2), cov(df_2))
+
+z_maha_df_1 <- scale(maha_df_1)
+z_maha_df_2 <- scale(maha_df_2)
+
+# Identify multivariate outliers based on z-scores
+out_maha_df_1 <- which(abs(z_maha_df_1) > 3.29, arr.ind = TRUE)
+out_maha_df_2 <- which(abs(z_maha_df_2) > 3.29, arr.ind = TRUE)
+
+# Combine the Mahalanobis distances for both days into one data frame
+maha_df <- data.frame(Day = c(rep("Day 1", nrow(z_maha_df_1)), rep("Day 2", nrow(z_maha_df_2))),
+                      Mahalanobis_Distance = c(z_maha_df_1, z_maha_df_2))
+
+# Plot boxplot
+ggplot(maha_df, aes(x = Day, y = Mahalanobis_Distance, fill = Day)) +
+  geom_boxplot() +
+  geom_abline(intercept = 3.29, slope = 0, linetype = "dashed") +
+  geom_abline(intercept = -3.29, slope = 0, linetype = "dashed") +
+  labs(title = "Mahalanobis Distance Boxplot",
+       x = "Day",
+       y = "Mahalanobis Distance",
+       fill = "Day")
+```

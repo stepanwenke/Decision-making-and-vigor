@@ -1,0 +1,207 @@
+Starting parallel pool (parpool) using the 'local' profile ...
+Connected to parallel pool with 16 workers.
+START: 2026-06-13 23:07:17
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 12
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 7
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 1
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 5
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 2
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 4
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 15
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 9
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 16
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 13
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 11
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 8
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 3
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 14
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 10
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 6
+Iteration time (s): 251.9319
+Iteration time (s): 289.3958
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 19
+Iteration time (s): 329.8463
+Iteration time (s): 339.0366
+Iteration time (s): 381.2589
+Iteration time (s): 436.253
+Iteration time (s): 448.0707
+Iteration time (s): 457.0512
+Iteration time (s): 487.7567
+Iteration time (s): 489.1287
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 18
+Iteration time (s): 491.0879
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 17
+Iteration time (s): 496.2741
+Iteration time (s): 498.1671
+Subject 614, Model k_rho_alpha_ll_wmh, K = 1, Iteration 20
+Iteration time (s): 503.0699
+Iteration time (s): 508.9292
+Iteration time (s): 512.4653
+Iteration time (s): 363.977
+Iteration time (s): 453.1954
+Iteration time (s): 462.3212
+Iteration time (s): 463.227
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 12
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 7
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 1
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 5
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 2
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 4
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 15
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 9
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 16
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 13
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 11
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 8
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 3
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 14
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 10
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 6
+Iteration time (s): 291.795
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 17
+Iteration time (s): 296.2573
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 20
+Iteration time (s): 323.2048
+Iteration time (s): 331.6203
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 19
+Iteration time (s): 393.1385
+Iteration time (s): 432.7793
+Iteration time (s): 439.403
+Iteration time (s): 468.0646
+Iteration time (s): 485.2653
+Iteration time (s): 492.1735
+Iteration time (s): 497.1073
+Iteration time (s): 501.9629
+Iteration time (s): 508.1719
+Iteration time (s): 509.1127
+Iteration time (s): 519.1696
+Iteration time (s): 293.792
+Iteration time (s): 659.3548
+Subject 614, Model k_rho_alpha_ll_wmh, K = 2, Iteration 18
+Iteration time (s): 334.2403
+Iteration time (s): 474.2893
+Iteration time (s): 590.7741
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 12
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 7
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 1
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 5
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 2
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 4
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 15
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 9
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 16
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 13
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 11
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 8
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 3
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 14
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 10
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 6
+Iteration time (s): 265.0015
+Iteration time (s): 327.413
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 20
+Iteration time (s): 389.0247
+Iteration time (s): 396.1402
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 17
+Iteration time (s): 452.7295
+Iteration time (s): 465.9897
+Iteration time (s): 481.5869
+Iteration time (s): 483.6123
+Iteration time (s): 486.6034
+Iteration time (s): 493.6528
+Iteration time (s): 495.3891
+Iteration time (s): 498.9948
+Iteration time (s): 501.0995
+Iteration time (s): 503.5936
+Iteration time (s): 512.2084
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 19
+Iteration time (s): 228.0971
+Iteration time (s): 572.7099
+Subject 614, Model k_rho_alpha_ll_wmh, K = 3, Iteration 18
+Iteration time (s): 221.3238
+Iteration time (s): 387.7289
+Iteration time (s): 341.1273
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 12
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 7
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 1
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 5
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 2
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 4
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 15
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 9
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 16
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 13
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 11
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 8
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 3
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 14
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 10
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 6
+Iteration time (s): 155.1268
+Iteration time (s): 202.3692
+Iteration time (s): 245.1524
+Iteration time (s): 278.7246
+Iteration time (s): 297.2937
+Iteration time (s): 365.5896
+Iteration time (s): 465.5394
+Iteration time (s): 472.012
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 17
+Iteration time (s): 482.2791
+Iteration time (s): 490.418
+Iteration time (s): 493.5659
+Iteration time (s): 497.8245
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 19
+Iteration time (s): 499.7961
+Iteration time (s): 502.2591
+Iteration time (s): 523.0789
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 18
+Iteration time (s): 555.541
+Subject 614, Model k_rho_alpha_ll_wmh, K = 4, Iteration 20
+Iteration time (s): 388.5456
+Iteration time (s): 333.0702
+Iteration time (s): 445.0975
+Iteration time (s): 418.5603
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 12
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 7
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 1
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 5
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 2
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 4
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 15
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 9
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 16
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 13
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 11
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 8
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 3
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 14
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 10
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 6
+Iteration time (s): 160.6442
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 19
+Iteration time (s): 299.3474
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 20
+Iteration time (s): 306.0612
+Iteration time (s): 315.6934
+Iteration time (s): 316.9137
+Iteration time (s): 349.2147
+Iteration time (s): 366.07
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 17
+Iteration time (s): 370.6162
+Iteration time (s): 383.7016
+Iteration time (s): 386.2911
+Iteration time (s): 428.9731
+Subject 614, Model k_rho_alpha_ll_wmh, K = 5, Iteration 18
+Iteration time (s): 442.7375
+Iteration time (s): 285.8124
+Iteration time (s): 483.8443
+Iteration time (s): 496.7989
+Iteration time (s): 498.8511
+Iteration time (s): 500.7202
+Iteration time (s): 276.3213
+Iteration time (s): 279.8315
+Iteration time (s): 472.188
+Finished subject 614, model k_rho_alpha_ll_wmh
+END:   2026-06-14 00:27:57
+Elapsed seconds: 4840.0
+Parallel pool using the 'Processes' profile is shutting down.

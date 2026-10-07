@@ -1,0 +1,19 @@
+Array task ID = 703
+mkdir: cannot create directory ‘/home/x_stewe/.MathWorks’: Not a directory
+{Error using parpool (line 133)
+Parallel pool failed to start with the following error. For more detailed
+information, validate the profile 'Processes' in the Cluster Profile Manager.
+
+Error in model_validation_fit_K_RLWM (line 2)
+parpool('local', 16);
+
+Caused by:
+    Error using
+    parallel.internal.pool.AbstractInteractiveClient>iThrowWithCause (line 256)
+    Failed to start pool.
+        Error using parallel.Cluster/createCommunicatingJob (line 115)
+        Failed to create folder
+        '/home/x_stewe/.matlab/local_cluster_jobs/R2024a/Job1539' after 60
+        seconds.
+            Directory already exists.
+} 

@@ -1,0 +1,49 @@
+Array task ID = 181
+
+------------------------------------------------------------------------
+       Segmentation violation detected at Tue May  5 21:56:01 2026
+------------------------------------------------------------------------
+Architecture     : glnxa64
+Processor ID     : Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz
+Host Name        : n236
+Locale           : en_US
+
+
+Abnormal termination:
+Segmentation violation
+
+Current Thread: 'GTP_6' id 22921010050624
+
+Register State (from fault):
+  RAX = 0000000000000001  RBX = 000014d888c3ba60
+  RCX = 0000000000003fff  RDX = 000000000000000e
+  RSP = 000014d8b6a960f8  RBP = 000014d8b6a96140
+  RSI = 000014d8b6a961b0  RDI = 000014d9c5bd437b
+
+   R8 = abaa76362039e410   R9 = 000014d888c45588
+  R10 = 0000000000000000  R11 = d9ae416a6f926879
+  R12 = 000000000000000e  R13 = 000014d8b6a961b0
+  R14 = 000014d8b6a961a0  R15 = 000014d8b6a961a0
+
+  RIP = 000014d8d096b39e  EFL = 0000000000010202
+
+   CS = 0033   FS = 0000   GS = 0000
+
+Stack Trace (from fault):
+[  0] 0x000014d8d096b39e                                   /lib64/libc.so.6+01487774
+[  1] 0x000014d8ab80b41d /home/x_stewe/.MathWorks/ServiceHost/n236/v2024.2.0.3/bin/glnxa64/spf/serviceproviders/mwactions/delegators/applicationdelegator/serviceprovider/libmwactionsapplicationdelegator.so+00123933
+[  2] 0x000014d8ab80bf3a /home/x_stewe/.MathWorks/ServiceHost/n236/v2024.2.0.3/bin/glnxa64/spf/serviceproviders/mwactions/delegators/applicationdelegator/serviceprovider/libmwactionsapplicationdelegator.so+00126778
+[  3] 0x000014d8ab821a4f /home/x_stewe/.MathWorks/ServiceHost/n236/v2024.2.0.3/bin/glnxa64/spf/serviceproviders/mwactions/delegators/applicationdelegator/serviceprovider/libmwactionsapplicationdelegator.so+00215631
+[  4] 0x000014d8ab82412d /home/x_stewe/.MathWorks/ServiceHost/n236/v2024.2.0.3/bin/glnxa64/spf/serviceproviders/mwactions/delegators/applicationdelegator/serviceprovider/libmwactionsapplicationdelegator.so+00225581
+[  5] 0x000014d8d0ec1533 /home/x_stewe/.MathWorks/ServiceHost/n236/v2024.2.0.3/bin/glnxa64/libCppMicroServices.so.3.8.0+00472371
+[  6] 0x000014d8d0ec15d1 /home/x_stewe/.MathWorks/ServiceHost/n236/v2024.2.0.3/bin/glnxa64/libCppMicroServices.so.3.8.0+00472529
+[  7] 0x000014d8d0ed1f6f /home/x_stewe/.MathWorks/ServiceHost/n236/v2024.2.0.3/bin/glnxa64/libCppMicroServices.so.3.8.0+00540527 _ZN16cppmicroservices23ServiceRegistrationBase10UnregisterEv+00002367
+[  8] 0x000014d8b7ba6968 /home/x_stewe/.MathWorks/ServiceHost/n236/v2024.2.0.3/bin/glnxa64/spf/framework/agent/spf/framework/libmwagentspfframework.so+00575848
+[  9] 0x000014d8b7ba77d2 /home/x_stewe/.MathWorks/ServiceHost/n236/v2024.2.0.3/bin/glnxa64/spf/framework/agent/spf/framework/libmwagentspfframework.so+00579538
+[ 10] 0x000014d8b7b74bd9 /home/x_stewe/.MathWorks/ServiceHost/n236/v2024.2.0.3/bin/glnxa64/spf/framework/agent/spf/framework/libmwagentspfframework.so+00371673
+[ 11] 0x000014d8d0ced8c3 /home/x_stewe/.MathWorks/ServiceHost/n236/v2024.2.0.3/bin/glnxa64/../../sys/os/glnxa64/libstdc++.so.6+00903363
+[ 12] 0x000014d8d088b2ea                                   /lib64/libc.so.6+00570090
+[ 13] 0x000014d8d09103d0                                   /lib64/libc.so.6+01115088
+
+
+** This crash report has been written to /home/x_stewe/.MathWorks/ServiceHost/n236/logs/MathWorksServiceHost_crash_501796.log **
