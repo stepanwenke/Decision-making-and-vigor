@@ -30,9 +30,13 @@ We have adapted three existing task to our needs (detailed description of the mo
 
 The battery was designed to be tested online on desktops with keyboards. We used JavaScript and jsPsych (de Leeuw et al., 2023), a framework for creating behavioral experiments.  The only pre-requisite to run the tasks is having an internet browser and enabled JavaScript. The battery can be launched by opening *index.html* in the browser and then specifying which session or specific task one desires to run. Parameters are added at the end of the URL (the battery will not run if no parameter is provided):
 
-Session: ?day (0,1,2) e.g., ?day=1
+Session: ?day (0,1,2) e.g., 
 
-Task: ?task (rlwm, gng, effort, foraging), e.g., ?task=effort
+```...index.html?day=1```
+
+Task: ?task (rlwm, gng, effort, foraging), e.g., 
+
+```...index.html?task=effort```
 
 ## Saving data
 
