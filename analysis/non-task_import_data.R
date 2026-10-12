@@ -12,7 +12,8 @@ if (getwd() != script_dir) {
   message("The script_dir is the same as the current working directory.")
 }
 
-day <- 1
+# Choose session 0, 1 or 2
+day <- 0
 
 # Set the working directory to the data folder
 setwd(paste0("../data/session", day))
@@ -180,10 +181,21 @@ get_feedback <- function(df) {
     select(subjID) %>%
     pull()
   
+  # if (id == "309") {
+  #   browser()
+  # }
+  
   json_string <- df %>%
     filter(task == 'final_feedback') %>%
     select(response) %>%
     pull()
+  
+  # 3. SAFETY CHECK: Handle empty, NA, or missing data
+  if (length(json_string) == 0 || is.na(json_string[1]) || json_string[1] == "") {
+    warning(paste("Subject", id, "has no final_feedback data. Returning empty dataframe."))
+    # Return a dataframe with the expected columns but filled with NA
+    return(list(id, data.frame(like = NA_character_, dislike = NA_character_, bugs = NA_character_)))
+  }
   
   final_feedback <- data.frame(fromJSON(json_string))
   
@@ -254,235 +266,236 @@ df_payouts <- data.frame(
 # Print the dataframe
 print(df_payouts)
 
-################################## Score AMI ##################################
-score_ami <- function(ami_df) {
-  
-  # indices of the scores for the three subscales
-  ba_idx <- c(5,9,10,11,12,15) # behavioral activation (BA)
-  es_idx <- c(1,6,7,13,16,18) # emotional sensitivity (ES)
-  sm_idx <- c(2,3,4,8,14,17) # social motivation (SM)
-  
-  n_items <- 18
-  n_participants <- length(ami_df)
-  ami_responses <- matrix(nrow = n_participants, ncol = n_items) # initialize response matrix
-  subID <- character(n_participants)
-  
-  for(i in 1:n_participants) {
-    # The first 18 of participants responses (item 19 is attention check)
-    cur_subject <- ami_df[[i]][[2]]$response[1:n_items] # get responses of this participant
+if (day != 0) {
+  ################################## Score AMI ##################################
+  score_ami <- function(ami_df) {
     
-    # Extract only the numbers of participant's responses using regexpr and regmatches
-    ami_responses[i, ] <- as.numeric(regmatches(cur_subject, regexpr("\\d+", cur_subject)))
-    # add subjID as rownames
-    subID[i]  <- ami_df[[i]][[1]]
+    # indices of the scores for the three subscales
+    ba_idx <- c(5,9,10,11,12,15) # behavioral activation (BA)
+    es_idx <- c(1,6,7,13,16,18) # emotional sensitivity (ES)
+    sm_idx <- c(2,3,4,8,14,17) # social motivation (SM)
+    
+    n_items <- 18
+    n_participants <- length(ami_df)
+    ami_responses <- matrix(nrow = n_participants, ncol = n_items) # initialize response matrix
+    subID <- character(n_participants)
+    
+    for(i in 1:n_participants) {
+      # The first 18 of participants responses (item 19 is attention check)
+      cur_subject <- ami_df[[i]][[2]]$response[1:n_items] # get responses of this participant
+      
+      # Extract only the numbers of participant's responses using regexpr and regmatches
+      ami_responses[i, ] <- as.numeric(regmatches(cur_subject, regexpr("\\d+", cur_subject)))
+      # add subjID as rownames
+      subID[i]  <- ami_df[[i]][[1]]
+    }
+    
+    #ami_responses <- 4 - ami_responses
+    
+    # extract subscales
+    ba_responses <- ami_responses[,ba_idx] # BA
+    es_responses <- ami_responses[,es_idx] # ES
+    sm_responses <- ami_responses[,sm_idx] # SM
+    
+    # Score by taking the average of the individual items (Ang et al., 2017)
+    ba_scores <- rowMeans(ba_responses)
+    es_scores <- rowMeans(es_responses)
+    sm_scores <- rowMeans(sm_responses)
+    
+    ami_scores <- data.frame(behavioral_activation=ba_scores, 
+                             emotional_sensitivity=es_scores, 
+                             social_motivation = sm_scores,
+                             subjID = subID)
+    return(ami_scores)
   }
   
-  #ami_responses <- 4 - ami_responses
+  # A greater score indicates greater apathy (from 0 to 4)
+  if (day > 0) {
+    ami_scores <- score_ami(ami_df)
+    ami_scores <- ami_scores %>% 
+      select(subjID, behavioral_activation, emotional_sensitivity, social_motivation)
+    
+    # combine AMI and PANAS into one df and save as csv
+    combined_df <- reduce(list(ami_scores), full_join, by = "subjID")
+    
+    
+    
+    write.table(combined_df, paste0(output_folder, '/questionnaire_scores.csv'), row.names = FALSE, col.names = TRUE, sep=",")
+  }
   
-  # extract subscales
-  ba_responses <- ami_responses[,ba_idx] # BA
-  es_responses <- ami_responses[,es_idx] # ES
-  sm_responses <- ami_responses[,sm_idx] # SM
+  ######################### ASMR #########################
   
-  # Score by taking the average of the individual items (Ang et al., 2017)
-  ba_scores <- rowMeans(ba_responses)
-  es_scores <- rowMeans(es_responses)
-  sm_scores <- rowMeans(sm_responses)
+  score_asrm <- function(asrm_df) {
+    
+    scores <- lapply(names(asrm_df), function(id) {
+      subjID <- sub("^output/", "", id)  # remove 'output/' prefix
+      df <- asrm_df[[id]][[2]]
+      df <- df[df$item_number != "AC", ]
+      
+      # Extract the number at the beginning of each response
+      numbers <- as.numeric(sub("^(\\d+)\\..*", "\\1", df$response))
+      
+      # Subtract 1 from each item before summing
+      score <- sum(numbers - 1)
+      
+      return(data.frame(subjID = subjID, Score_ASRM = score))
+    })
+    
+    do.call(rbind, scores)
+  }
   
-  ami_scores <- data.frame(behavioral_activation=ba_scores, 
-                           emotional_sensitivity=es_scores, 
-                           social_motivation = sm_scores,
-                           subjID = subID)
-  return(ami_scores)
+  if (day > 0) {
+    asrm_scores <- score_asrm(asrm_df)
+  }
+  
+  
+  ######## CESD ##########
+  
+  score_cesd <- function(cesd_df) {
+    
+    scores <- lapply(names(cesd_df), function(id) {
+      
+      subjID <- sub("^output/", "", id)
+      df <- cesd_df[[id]][[2]]
+      df <- df[df$item_number != "AC", ]
+      
+      # Extract the number from the beginning of the response
+      points <- as.numeric(sub("^(\\d+)\\..*", "\\1", df$response))
+      
+      # Convert item_number to numeric for indexing
+      df$item_number <- as.numeric(df$item_number)
+      
+      # Reverse-score items 4, 8, 12, 16 (0 ↔ 3)
+      reverse_items <- c(4, 8, 12, 16)
+      reverse_idx <- df$item_number %in% reverse_items
+      points[reverse_idx] <- 3 - points[reverse_idx]
+      
+      # Total score
+      score <- sum(points)
+      
+      return(data.frame(subjID = subjID, Score_CESD = score))
+    })
+    
+    do.call(rbind, scores)
+  }
+  
+  
+  ######## SHPS ##########
+  
+  score_shps <- function(shps_df) {
+    
+    scores <- lapply(names(shps_df), function(id) {
+      # browser()
+      subjID <- sub("^output/", "", id)
+      df <- shps_df[[id]][[2]]
+      df <- df[df$item_number != "AC", ]
+      
+      # Extract the number from the beginning of the response
+      points <- as.numeric(sub("^(\\d+)\\..*", "\\1", df$response))
+      
+      # Convert item_number to numeric for indexing
+      df$item_number <- as.numeric(df$item_number)
+      
+      # Reverse-score items 4, 8, 12, 16 (0 ↔ 3)
+      reverse_items <- c(2, 4, 5, 7, 9)
+      reverse_idx <- df$item_number %in% reverse_items
+      points[reverse_idx] <- 3 - points[reverse_idx]
+      
+      # Total score
+      score <- sum(points)
+      
+      return(data.frame(subjID = subjID, Score_SHPS = score))
+    })
+    
+    do.call(rbind, scores)
+  }
+  
+  ###### PSS ##########
+  score_pss <- function(pss_df) {
+    
+    scores <- lapply(names(pss_df), function(id) {
+      subjID <- sub("^output/", "", id)
+      df <- pss_df[[id]][[2]]
+      df <- df[df$item_number != "AC", ]
+      
+      # Extract the number from the beginning of the response
+      points <- as.numeric(sub("^(\\d+)\\..*", "\\1", df$response))
+      
+      # Convert item_number to numeric for indexing
+      df$item_number <- as.numeric(df$item_number)
+      
+      # Reverse-score items 4, 5, 7 and 8 (0 ↔ 4)
+      reverse_items <- c(4, 5, 7, 8)
+      reverse_idx <- df$item_number %in% reverse_items
+      points[reverse_idx] <- 4 - points[reverse_idx]
+      
+      # Total score
+      score <- sum(points)
+      
+      return(data.frame(subjID = subjID, Score_PSS = score))
+    })
+    
+    do.call(rbind, scores)
+  }
+  
+  ##### BIS/BAS ##########
+  
+  score_bisbas <- function(bisbas_df) {
+    
+    scores <- lapply(names(bisbas_df), function(id) {
+      subjID <- sub("^output/", "", id)
+      df <- bisbas_df[[id]][[2]]
+      df <- df[df$item_number != "AC", ]
+      
+      # Extract the number from the beginning of the response
+      points <- as.numeric(sub("^(\\d+)\\..*", "\\1", df$response))
+      
+      # Convert item_number to numeric for indexing
+      df$item_number <- as.numeric(df$item_number)
+      
+      # Reverse-score items (all except 2 and 22)
+      reverse_items <- setdiff(1:24, c(2, 22))
+      reverse_idx <- df$item_number %in% reverse_items
+      points[reverse_idx] <- 5 - points[reverse_idx]
+      
+      # indices of the scores for the four subscales
+      bas_drive <- c(3,9,12,21) # BAS Drive (goal pursuit)
+      bas_fun <- c(5,10,15,20) # BAS Fun Seeking (spontaneity, novelty seeking)
+      bas_reward <- c(4,7,14,18,23) # BAS Reward Responsiveness (positive reaction to reward)
+      bis <- c(2,8,13,16,19,22,24) # BIS (sensitivity to punishment or negative emotion)
+      fillers <- c(1,6,11,17) # fillers
+      
+      # Sum scores per subscale
+      score_BAS_Drive <- sum(points[df$item_number %in% bas_drive])
+      score_BAS_Fun <- sum(points[df$item_number %in% bas_fun])
+      score_BAS_Reward <- sum(points[df$item_number %in% bas_reward])
+      score_BIS <- sum(points[df$item_number %in% bis])
+      
+      return(data.frame(
+        subjID = subjID,
+        BIS = score_BIS,
+        BAS_Drive = score_BAS_Drive,
+        BAS_Fun = score_BAS_Fun,
+        BAS_Reward = score_BAS_Reward
+      ))
+    })
+    
+    do.call(rbind, scores)
+  }
+  
+  
+  ### Combine questionnaires and save it ###
+  if (day > 0) {
+    cesd_scores <- score_cesd(cesd_df)
+    shps_scores <- score_shps(shps_df)
+    pss_scores <- score_pss(pss_df)
+    bisbas_scores <- score_bisbas(bisbas_df)
+    combined_df <- reduce(list(ami_scores, asrm_scores, cesd_scores, shps_scores, pss_scores, bisbas_scores), full_join, by = "subjID")
+    write.csv(combined_df,paste0("../../output/session",day , '/questionnaire_scores.csv'), row.names = FALSE)
+    
+  }
+
 }
-
-# A greater score indicates greater apathy (from 0 to 4)
-if (day > 0) {
-  ami_scores <- score_ami(ami_df)
-  ami_scores <- ami_scores %>% 
-    select(subjID, behavioral_activation, emotional_sensitivity, social_motivation)
-  
-  # combine AMI and PANAS into one df and save as csv
-  combined_df <- reduce(list(ami_scores), full_join, by = "subjID")
-  
-  
-  
-  write.table(combined_df, paste0(output_folder, '/questionnaire_scores.csv'), row.names = FALSE, col.names = TRUE, sep=",")
-}
-
-######################### ASMR #########################
-
-score_asrm <- function(asrm_df) {
-  
-  scores <- lapply(names(asrm_df), function(id) {
-    subjID <- sub("^output/", "", id)  # remove 'output/' prefix
-    df <- asrm_df[[id]][[2]]
-    df <- df[df$item_number != "AC", ]
-    
-    # Extract the number at the beginning of each response
-    numbers <- as.numeric(sub("^(\\d+)\\..*", "\\1", df$response))
-    
-    # Subtract 1 from each item before summing
-    score <- sum(numbers - 1)
-    
-    return(data.frame(subjID = subjID, Score_ASRM = score))
-  })
-  
-  do.call(rbind, scores)
-}
-
-if (day > 0) {
-  asrm_scores <- score_asrm(asrm_df)
-}
-
-
-######## CESD ##########
-
-score_cesd <- function(cesd_df) {
-  
-  scores <- lapply(names(cesd_df), function(id) {
-    
-    subjID <- sub("^output/", "", id)
-    df <- cesd_df[[id]][[2]]
-    df <- df[df$item_number != "AC", ]
-    
-    # Extract the number from the beginning of the response
-    points <- as.numeric(sub("^(\\d+)\\..*", "\\1", df$response))
-    
-    # Convert item_number to numeric for indexing
-    df$item_number <- as.numeric(df$item_number)
-    
-    # Reverse-score items 4, 8, 12, 16 (0 ↔ 3)
-    reverse_items <- c(4, 8, 12, 16)
-    reverse_idx <- df$item_number %in% reverse_items
-    points[reverse_idx] <- 3 - points[reverse_idx]
-    
-    # Total score
-    score <- sum(points)
-    
-    return(data.frame(subjID = subjID, Score_CESD = score))
-  })
-  
-  do.call(rbind, scores)
-}
-
-
-######## SHPS ##########
-
-score_shps <- function(shps_df) {
-  
-  scores <- lapply(names(shps_df), function(id) {
-    # browser()
-    subjID <- sub("^output/", "", id)
-    df <- shps_df[[id]][[2]]
-    df <- df[df$item_number != "AC", ]
-    
-    # Extract the number from the beginning of the response
-    points <- as.numeric(sub("^(\\d+)\\..*", "\\1", df$response))
-    
-    # Convert item_number to numeric for indexing
-    df$item_number <- as.numeric(df$item_number)
-    
-    # Reverse-score items 4, 8, 12, 16 (0 ↔ 3)
-    reverse_items <- c(2, 4, 5, 7, 9)
-    reverse_idx <- df$item_number %in% reverse_items
-    points[reverse_idx] <- 3 - points[reverse_idx]
-    
-    # Total score
-    score <- sum(points)
-    
-    return(data.frame(subjID = subjID, Score_SHPS = score))
-  })
-  
-  do.call(rbind, scores)
-}
-
-###### PSS ##########
-score_pss <- function(pss_df) {
-  
-  scores <- lapply(names(pss_df), function(id) {
-    subjID <- sub("^output/", "", id)
-    df <- pss_df[[id]][[2]]
-    df <- df[df$item_number != "AC", ]
-    
-    # Extract the number from the beginning of the response
-    points <- as.numeric(sub("^(\\d+)\\..*", "\\1", df$response))
-    
-    # Convert item_number to numeric for indexing
-    df$item_number <- as.numeric(df$item_number)
-    
-    # Reverse-score items 4, 5, 7 and 8 (0 ↔ 4)
-    reverse_items <- c(4, 5, 7, 8)
-    reverse_idx <- df$item_number %in% reverse_items
-    points[reverse_idx] <- 4 - points[reverse_idx]
-    
-    # Total score
-    score <- sum(points)
-    
-    return(data.frame(subjID = subjID, Score_PSS = score))
-  })
-  
-  do.call(rbind, scores)
-}
-
-##### BIS/BAS ##########
-
-score_bisbas <- function(bisbas_df) {
-  
-  scores <- lapply(names(bisbas_df), function(id) {
-    subjID <- sub("^output/", "", id)
-    df <- bisbas_df[[id]][[2]]
-    df <- df[df$item_number != "AC", ]
-    
-    # Extract the number from the beginning of the response
-    points <- as.numeric(sub("^(\\d+)\\..*", "\\1", df$response))
-    
-    # Convert item_number to numeric for indexing
-    df$item_number <- as.numeric(df$item_number)
-    
-    # Reverse-score items (all except 2 and 22)
-    reverse_items <- setdiff(1:24, c(2, 22))
-    reverse_idx <- df$item_number %in% reverse_items
-    points[reverse_idx] <- 5 - points[reverse_idx]
-    
-    # indices of the scores for the four subscales
-    bas_drive <- c(3,9,12,21) # BAS Drive (goal pursuit)
-    bas_fun <- c(5,10,15,20) # BAS Fun Seeking (spontaneity, novelty seeking)
-    bas_reward <- c(4,7,14,18,23) # BAS Reward Responsiveness (positive reaction to reward)
-    bis <- c(2,8,13,16,19,22,24) # BIS (sensitivity to punishment or negative emotion)
-    fillers <- c(1,6,11,17) # fillers
-    
-    # Sum scores per subscale
-    score_BAS_Drive <- sum(points[df$item_number %in% bas_drive])
-    score_BAS_Fun <- sum(points[df$item_number %in% bas_fun])
-    score_BAS_Reward <- sum(points[df$item_number %in% bas_reward])
-    score_BIS <- sum(points[df$item_number %in% bis])
-    
-    return(data.frame(
-      subjID = subjID,
-      BIS = score_BIS,
-      BAS_Drive = score_BAS_Drive,
-      BAS_Fun = score_BAS_Fun,
-      BAS_Reward = score_BAS_Reward
-    ))
-  })
-  
-  do.call(rbind, scores)
-}
-
-
-### Combine questionnaires and save it ###
-if (day > 0) {
-  cesd_scores <- score_cesd(cesd_df)
-  shps_scores <- score_shps(shps_df)
-  pss_scores <- score_pss(pss_df)
-  bisbas_scores <- score_bisbas(bisbas_df)
-  combined_df <- reduce(list(ami_scores, asrm_scores, cesd_scores, shps_scores, pss_scores, bisbas_scores), full_join, by = "subjID")
-  write.csv(combined_df,paste0("../../output/session",day , '/questionnaire_scores.csv'), row.names = FALSE)
-  
-}
-
-
 
 ######## Time elapsed ########
 # Initialize an empty data frame to store the results
@@ -686,51 +699,53 @@ extract_AC_item <- function(df_list, questionnaire_name) {
 
 # Assuming these lists already exist:
 # ami_df, cesd_df, asrm_df, shps_df, bisbas_df, pss_df
-
-df_ami     <- extract_AC_item(ami_df, "AMI")
-df_cesd    <- extract_AC_item(cesd_df, "CESD")
-df_asrm    <- extract_AC_item(asrm_df, "ASRM")
-df_shps    <- extract_AC_item(shps_df, "SHPS")
-df_bisbas  <- extract_AC_item(bisbas_df, "BIS_BAS")
-df_pss     <- extract_AC_item(pss_df, "PSS")
-
-# Combine all into one final dataframe
-df_ac_combined <- bind_rows(
-  df_ami,
-  df_cesd,
-  df_asrm,
-  df_shps,
-  df_bisbas,
-  df_pss
-)
-
-# Pivot to wide format
-df_ac_wide <- df_ac_combined %>%
-  pivot_wider(
-    names_from = questionnaire,
-    values_from = response
+if (day != 0) {
+    df_ami     <- extract_AC_item(ami_df, "AMI")
+    df_cesd    <- extract_AC_item(cesd_df, "CESD")
+    df_asrm    <- extract_AC_item(asrm_df, "ASRM")
+    df_shps    <- extract_AC_item(shps_df, "SHPS")
+    df_bisbas  <- extract_AC_item(bisbas_df, "BIS_BAS")
+    df_pss     <- extract_AC_item(pss_df, "PSS")
+  
+  
+  # Combine all into one final dataframe
+  df_ac_combined <- bind_rows(
+    df_ami,
+    df_cesd,
+    df_asrm,
+    df_shps,
+    df_bisbas,
+    df_pss
   )
-
-# View result
-print(df_ac_wide)
-
-df_ac_output <- df_ac_wide
-
-# Change it to TRUE/FALSE if the attention check was passed
-# mapping of column names to "trigger" values
-passed_ac_checks <- list(
-  AMI   = "3. Mostly Untrue",
-  CESD  = "2. Choose this option to indicate that you payed attention ",
-  ASRM  = "3. Mostly Untrue",
-  SHPS  = "3. Strongly Agree",
-  BIS_BAS = "1. very true for me",
-  PSS   = "3. Fairly Often"
-)
-
-# loop through and transform each column
-for (col in names(passed_ac_checks)) {
-  df_ac_output[[col]] <- df_ac_wide[[col]] == passed_ac_checks[[col]]
+  
+  # Pivot to wide format
+  df_ac_wide <- df_ac_combined %>%
+    pivot_wider(
+      names_from = questionnaire,
+      values_from = response
+    )
+  
+  # View result
+  print(df_ac_wide)
+  
+  df_ac_output <- df_ac_wide
+  
+  # Change it to TRUE/FALSE if the attention check was passed
+  # mapping of column names to "trigger" values
+  passed_ac_checks <- list(
+    AMI   = "3. Mostly Untrue",
+    CESD  = "2. Choose this option to indicate that you payed attention ",
+    ASRM  = "3. Mostly Untrue",
+    SHPS  = "3. Strongly Agree",
+    BIS_BAS = "1. very true for me",
+    PSS   = "3. Fairly Often"
+  )
+  
+  # loop through and transform each column
+  for (col in names(passed_ac_checks)) {
+    df_ac_output[[col]] <- df_ac_wide[[col]] == passed_ac_checks[[col]]
+  }
+  
+  # Export the df
+  write.csv(df_ac_output, paste0("../../output/session",day ,"/quests_catch_trials.csv"), row.names = FALSE)
 }
-
-# Export the df
-write.csv(df_ac_output, paste0("../../output/session",day ,"/quests_catch_trials.csv"), row.names = FALSE)

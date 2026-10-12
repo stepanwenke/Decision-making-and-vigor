@@ -36,18 +36,14 @@ if (getwd() != script_dir) {
 
 source("helpers/foraging_exit_thresholds_calc.R")
 
-day <- 1
+# Session 1 or 2
+day <- 2
 
 # Set the working directory to the data folder
 setwd(paste0("../data/session", day))
 
 # Set the <- folder
 output_folder <- "output/"
-
-#output folder (from parsing)
-# output_folder <- paste(script_dir, "/data/output/real_output", sep="") # remove the 'real_output' later 
-#output_folder <- "../retest/data/output"
-#output_folder <- "../retest/data/output_day1"
 
 # Get list of subfolders (assuming they are all named 's' followed by numbers)
 subfolders <- list.dirs(path = output_folder, full.names = TRUE, recursive = FALSE)
@@ -67,105 +63,6 @@ for (i in seq_along(subfolders)) {
 }
 
 exclude_ids <- c()
-
-# Exclusion of day 2 performance-based measures
-if (day == 2) {
-  exclude_ids <- c(
-    "5eef7da8a4868b05c902ef2d",
-    "65956ab743aa1e8fe002ba3b",
-    "60e0dc6be0772b7dfdad9b2c",
-    "67d0581ffe3bbe5188426aff",
-    "67f65a16d76fa76c28091ede",
-    "675436e14d7ef1173a74a5b8",
-    "6774f9e03114a09130a1e78f",
-    "67e2a5b83621fdee51b6277e",
-    "5a77529ff49c9a0001f2fdbd",
-    "672879d614dce67b8c3090ea",
-    "67dc135e06eee79a0b0324ef",
-    "67f7c74584da18f7cd5fceeb",
-    "60d9dfd4dcc09cf57dc92cb1",
-    "65fb34c4df61f03ce0dd6dd9",
-    "6122f45e2e93a3ff9a7b7a5d",
-    "65b26a99fe500245f7a7c750",
-    "67f3619e16d4ca195fbd1bd0",
-    "669a6bba1fd09527cf41717a",
-    "5bf3199ebe7c7300017b710a",
-    "5c549c6372fd9000018b5968",
-    "5e5c993cd0394c474f7cc502",
-    "5fabca68273dd403ab40e361",
-    "5fed47cfcb429d79af4f8ded",
-    "655f8bf6de805f7bd81e5811",
-    "65651805d1afb42ba1a55476",
-    "667971a555af1f83d3f29ae7",
-    "66ce541cd8da920539a1c3cc",
-    "673bf9c0212c1ae07ff6c22e",
-    "67cd50f22f22938860f85a66"
-  )
-} else if (day == 1) {
-  exclude_ids <- c(
-    "6697c39cfbf1e3381e6ee45c",
-    "65956ab743aa1e8fe002ba3b",
-    "669a6bba1fd09527cf41717a",
-    "65b26a99fe500245f7a7c750",
-    "677009b08130c3028f6a8a6d",
-    "6161cb3de3d274978d46575b",
-    "65fc95c627592d85499ae358",
-    "655f8bf6de805f7bd81e5811",
-    "665c5d94303fdf202ac9ded0",
-    "65fb34c4df61f03ce0dd6dd9",
-    "5d66b4f503b0d900195ca627",
-    "676d40e2915d059bf7ef62e8",
-    "67d095bc257ecc840642912e",
-    "66645dfa2639fc47c5bca0a6",
-    "67826c0cd5858c9d420da7ff",
-    "67d0581ffe3bbe5188426aff",
-    "5eef7da8a4868b05c902ef2d",
-    "5fff2877a99bcb65a14a223c",
-    "67f3619e16d4ca195fbd1bd0",
-    "67e5cf90b79d0874e1cf16b0",
-    "571a78f06a1c6300114b8d80",
-    "5af82cf9e066a40001136ace",
-    "67e2a5b83621fdee51b6277e",
-    "66ce541cd8da920539a1c3cc",
-    "6741ce8667002c96f0362d34",
-    "5e4066ed9eec8d2a184e4ff4",
-    "63d9d5072e083033fc895df1",
-    "67d9a91f56a568412eecda60",
-    "67f6a640d2046b13fcf33328",
-    "66083cd0a45e1ce399e6a85f",
-    "67851f4cba98f2087f182764",
-    "67dc135e06eee79a0b0324ef",
-    "604fa685e33606f9a0ee8189",
-    "609bfd97a7c95881330491d4",
-    "6122f45e2e93a3ff9a7b7a5d",
-    "64feeabd355b506d0512d862",
-    "6606b31155457e4f162ecf5a",
-    "6776b99a8215d150863a71b4"
-  )
-}
-
-# all_excluded_both_days <- c(
-#   "6697c39cfbf1e3381e6ee45c", "65956ab743aa1e8fe002ba3b", "669a6bba1fd09527cf41717a",
-#   "65b26a99fe500245f7a7c750", "677009b08130c3028f6a8a6d", "6161cb3de3d274978d46575b",
-#   "65fc95c627592d85499ae358", "655f8bf6de805f7bd81e5811", "665c5d94303fdf202ac9ded0",
-#   "65fb34c4df61f03ce0dd6dd9", "5d66b4f503b0d900195ca627", "676d40e2915d059bf7ef62e8",
-#   "67d095bc257ecc840642912e", "66645dfa2639fc47c5bca0a6", "67826c0cd5858c9d420da7ff",
-#   "67d0581ffe3bbe5188426aff", "5eef7da8a4868b05c902ef2d", "5fff2877a99bcb65a14a223c",
-#   "67f3619e16d4ca195fbd1bd0", "67e5cf90b79d0874e1cf16b0", "571a78f06a1c6300114b8d80",
-#   "5af82cf9e066a40001136ace", "67e2a5b83621fdee51b6277e", "66ce541cd8da920539a1c3cc",
-#   "6741ce8667002c96f0362d34", "5e4066ed9eec8d2a184e4ff4", "63d9d5072e083033fc895df1",
-#   "67d9a91f56a568412eecda60", "67f6a640d2046b13fcf33328", "66083cd0a45e1ce399e6a85f",
-#   "67851f4cba98f2087f182764", "67dc135e06eee79a0b0324ef", "604fa685e33606f9a0ee8189",
-#   "609bfd97a7c95881330491d4", "6122f45e2e93a3ff9a7b7a5d", "64feeabd355b506d0512d862",
-#   "6606b31155457e4f162ecf5a", "6776b99a8215d150863a71b4", "60e0dc6be0772b7dfdad9b2c",
-#   "67f65a16d76fa76c28091ede", "675436e14d7ef1173a74a5b8", "6774f9e03114a09130a1e78f",
-#   "5a77529ff49c9a0001f2fdbd", "672879d614dce67b8c3090ea", "67f7c74584da18f7cd5fceeb",
-#   "60d9dfd4dcc09cf57dc92cb1", "5bf3199ebe7c7300017b710a", "5c549c6372fd9000018b5968",
-#   "5e5c993cd0394c474f7cc502", "5fabca68273dd403ab40e361", "5fed47cfcb429d79af4f8ded",
-#   "65651805d1afb42ba1a55476", "667971a555af1f83d3f29ae7", "673bf9c0212c1ae07ff6c22e",
-#   "67cd50f22f22938860f85a66"
-# )
-
 
 exclude_ids <- paste0("output/", exclude_ids)
 
@@ -391,31 +288,6 @@ mean_optimal_exit <- all_conditions_data %>%
   group_by(cond) %>%
   summarize(mean_optimal_exit = mean(optimal_exit, na.rm = TRUE))
 
-# Plot the data
-# ggplot(all_conditions_data, aes(x = relative_x, y = y, color = id)) +
-#   geom_line() +
-#   geom_line(data = all_conditions_data %>%
-#               group_by(id, cond) %>%
-#               summarize(mean_relative_x = min(relative_x),
-#                         mean_y = mean(y)),
-#             aes(x = mean_relative_x, y = mean_y, color = id)) +
-#   # Add horizontal lines based on mean_value
-#   geom_hline(data = all_conditions_data %>%
-#                group_by(id, cond) %>%
-#                summarize(mean_value = mean(mean_value)),
-#              aes(yintercept = mean_value, color = id),
-#              linetype = "dashed") +
-#   # Add horizontal line for mean optimal_exit
-#   geom_hline(data = mean_optimal_exit, aes(yintercept = mean_optimal_exit, color = "Optimal Exit"),
-#              linetype = "dashed", color = "black") +
-#   facet_wrap(~cond) +
-#   labs(title = "All Conditions",
-#        x = "Time (min)",
-#        y = "Exit Thresholds",
-#        color = "Participant") +
-#   theme_minimal()
-## end of chat gpt
-
 without_outlier <- all_conditions_data
 
 # # plot the exit threshold boxplots by condition
@@ -493,59 +365,6 @@ write.csv(df_catch_all, paste0(folder_path_pilot_anal,'foraging_catch_trials.csv
 # Save the df_catch summary
 write.csv(df_catch_summary, paste0(folder_path_pilot_anal, "foraging/foraging_catch_summary.csv"), row.names = FALSE)
 
-###### Get thresholds for PCA ##################
-# thresholds_wide <- pivot_wider(df_avg_thresholds,
-#                        names_from = cond,
-#                        values_from = mean_value)
-# # add average of all conditions
-# thresholds_wide <- thresholds_wide %>%
-#   mutate(average_value = rowMeans(select(., 2:5), na.rm = TRUE))
-# 
-# # save to csv (in analysis)
-# write.csv(thresholds_wide, "foraging_exit_thresholds.csv")
-# 
-
-
-################ MAIN EFFECTS #############################
-# lsh <- df_avg_thresholds %>%
-#   filter(cond == "long-shallow") %>%
-#   pull(mean_value)
-# 
-# lst <- df_avg_thresholds %>%
-#   filter(cond == "long-steep") %>%
-#   pull(mean_value)
-# 
-# ssh <- df_avg_thresholds %>%
-#   filter(cond == "short-shallow") %>%
-#   pull(mean_value)
-# 
-# sst <- df_avg_thresholds %>%
-#   filter(cond == "short-steep") %>%
-#   pull(mean_value)
-# 
-# 
-# # Steepness
-# # main_eff_steepness <- (lsh$mean_value - lst$mean_value) + (ssh$mean_value - sst$mean_value)
-# main_eff_steepness <- (lsh - lst) + (ssh - sst)
-# # Travel time
-# # main_eff_travel <-  (ssh$mean_value + sst$mean_value) - (lsh$mean_value + lst$mean_value)
-# main_eff_travel <-  (ssh + sst) - (lsh + lst)
-# 
-# mean(main_eff_steepness)
-# sd(main_eff_steepness)
-# range(main_eff_steepness)
-# 
-# mean(main_eff_travel)
-# sd(main_eff_travel)
-# range(main_eff_travel)
-# 
-# 
-# cond_comparison <- lmer(mean_value ~ (1 | id) + cond, data = df_avg_thresholds)#
-# cond_comparison <- lme(mean_value ~ cond, random = ~ 1 | id, data = df_avg_thresholds)
-# summary(cond_comparison)
-# tukey_result <- lsmeans(cond_comparison, pairwise ~ cond, adjust = "none")
-# 
-
 t_test_result <- t.test(df_avg_thresholds %>%
                          filter(cond == "long-steep") %>%
                          pull(mean_value),
@@ -571,63 +390,6 @@ ttest_nice <- nice_table(
   t_test_df,
   title = c("Table 1", "Paired t-test Results Foraging")
 )
-#print(ttest_nice, preview = "docx")
-
-# 
-# # Convert it to data frame for further use in sig. brackets
-# tukey_result_df <- as.data.frame(tukey_result$contrasts)
-# #tukey_result_df$p.value <- as.character(tukey_result_df$p.value)
-# 
-# nice_table(
-#   tukey_result$contrasts,
-#   title = c("Table 1","Foraging t-test Results")
-#            )
-# 
-# 
-# df_avg_thresholds$cond <- factor(df_avg_thresholds$cond, levels = c("long-steep", "long-shallow", "short-steep", "short-shallow"))
-# mean_optimal_exit$cond <- factor(mean_optimal_exit$cond, levels = c("long-steep", "long-shallow", "short-steep", "short-shallow"))
-
-
-
-# Box plot with individual means as dots and optimal exit threshold lines
-# plot_ind_means <- ggplot(df_avg_thresholds, aes(x = cond, y = mean_value)) +
-#   geom_boxplot() +
-#   geom_point(aes(color = cond), position = position_jitter(width = 0, height = 0), size = 3) +
-#   #geom_errorbar(data = mean_optimal_exit, aes(x = cond, y = mean_optimal_exit, ymin = mean_optimal_exit, ymax = mean_optimal_exit, color = "MVT"),
-#                 #position = position_dodge(width = 0.75), linetype = "dashed", size = 1) +
-#   #geom_line(aes(group = id, color = cond), size = 1,position = position_jitter(width = 0, height = 0), alpha = 0.2) +  # Add alpha parameter
-#   labs(title = "Box Plot with Individual Means and Optimal Exit Threshold",
-#        x = "Condition",
-#        y = "Mean Value") +
-  # scale_y_continuous(breaks = seq(1, 15, 0.5)) +  # Specify breaks here
-  # theme_minimal() + 
-
-# New plot with actual significance
-# plot_ind_means <-  ggplot(df_avg_thresholds, aes(x = cond, y = mean_value)) +
-#   geom_bar(data = mean_optimal_exit, stat = "identity", aes(x = cond, y = mean_optimal_exit))+
-#   geom_point(aes(color = cond), position = position_jitter(width = 0, height = 0), size = 3) +
-#   stat_summary(geom = "point", fun.y = mean, shape = 5, size = 4, stroke = 3, alpha = 0.9, color = "red")+
-#   labs(title = "B",
-#        x = "Reward Environment",
-#        y = "Average Threshold for Leaving a Reward Environment") +
-#   scale_y_continuous(breaks = seq(1, 15, 1)) +
-#   theme(
-#     panel.background = element_blank(),
-#     panel.grid.major = element_blank(),
-#     panel.grid.minor = element_blank(),
-#     axis.line = element_line(colour = "black"),
-#     text = element_text(size = 14),
-#     axis.text = element_text(size = 14),
-#     legend.position = "none"  # Remove the legend
-#   ) +
-#   geom_signif(
-#     comparisons = list(c("long-steep", "short-steep")),
-#     annotations = "***",
-#     y_position = c(11, 11),  # Adjust the y position as needed 
-#     textsize = 6  # Increase the font size of the significance annotation
-#   )
-
-# compare conditions of short steep and long steep using t-test
 
 short_steep <- df_avg_thresholds %>%
   filter(cond == "short-steep") %>%
@@ -1627,6 +1389,7 @@ df_avg_threshold_temp <- df_avg_threshold %>%
   mutate(subjID = sub("output/", "", df_avg_threshold$subjID))
 
 # Merge the two data frames by subjID
+rt_avg_df$subjID <- as.character(rt_avg_df$subjID)
 rt_exit_df <- left_join(rt_avg_df, df_avg_threshold_temp, by = "subjID")
 
 # Remove rows where any column has non-finite values

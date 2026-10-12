@@ -9,7 +9,8 @@ if (getwd() != script_dir) {
   message("The script_dir is the same as the current working directory.")
 }
 
-day <- 1
+# Day 0, 1 or 2 (Session)
+day <- 2
 
 # Set the working directory to the data folder
 setwd(paste0("../data/session", day))

@@ -19,12 +19,9 @@ if (getwd() != script_dir) {
 source("helpers/rlwm_prop_corr_per_stim_iter.R") # assumes working directory is analysis folder
 source("helpers/rlwm_rt_per_stim_iter.R") # assumes working directory is analysis folder
 
-#output folder (from parsing)
-# setwd("../retest/data")
-# output_folder <- "output" # day 2
-# output_folder <- "output_day1" # day 1
 
-day <- 1
+# Session 1 or 2
+day <- 2
 
 # Set the working directory to the data folder
 setwd(paste0("../data/session", day))
@@ -61,104 +58,6 @@ for (i in seq_along(subfolders)) {
   }
 }
 exclude_ids <- c()
-
-# Exclusion of day 2 performance-based measures
-if (day == 2) {
-  exclude_ids <- c(
-    "5eef7da8a4868b05c902ef2d",
-    "65956ab743aa1e8fe002ba3b",
-    "60e0dc6be0772b7dfdad9b2c",
-    "67d0581ffe3bbe5188426aff",
-    "67f65a16d76fa76c28091ede",
-    "675436e14d7ef1173a74a5b8",
-    "6774f9e03114a09130a1e78f",
-    "67e2a5b83621fdee51b6277e",
-    "5a77529ff49c9a0001f2fdbd",
-    "672879d614dce67b8c3090ea",
-    "67dc135e06eee79a0b0324ef",
-    "67f7c74584da18f7cd5fceeb",
-    "60d9dfd4dcc09cf57dc92cb1",
-    "65fb34c4df61f03ce0dd6dd9",
-    "6122f45e2e93a3ff9a7b7a5d",
-    "65b26a99fe500245f7a7c750",
-    "67f3619e16d4ca195fbd1bd0",
-    "669a6bba1fd09527cf41717a",
-    "5bf3199ebe7c7300017b710a",
-    "5c549c6372fd9000018b5968",
-    "5e5c993cd0394c474f7cc502",
-    "5fabca68273dd403ab40e361",
-    "5fed47cfcb429d79af4f8ded",
-    "655f8bf6de805f7bd81e5811",
-    "65651805d1afb42ba1a55476",
-    "667971a555af1f83d3f29ae7",
-    "66ce541cd8da920539a1c3cc",
-    "673bf9c0212c1ae07ff6c22e",
-    "67cd50f22f22938860f85a66"
-  )
-} else if (day == 1) {
-  exclude_ids <- c(
-    "6697c39cfbf1e3381e6ee45c",
-    "65956ab743aa1e8fe002ba3b",
-    "669a6bba1fd09527cf41717a",
-    "65b26a99fe500245f7a7c750",
-    "677009b08130c3028f6a8a6d",
-    "6161cb3de3d274978d46575b",
-    "65fc95c627592d85499ae358",
-    "655f8bf6de805f7bd81e5811",
-    "665c5d94303fdf202ac9ded0",
-    "65fb34c4df61f03ce0dd6dd9",
-    "5d66b4f503b0d900195ca627",
-    "676d40e2915d059bf7ef62e8",
-    "67d095bc257ecc840642912e",
-    "66645dfa2639fc47c5bca0a6",
-    "67826c0cd5858c9d420da7ff",
-    "67d0581ffe3bbe5188426aff",
-    "5eef7da8a4868b05c902ef2d",
-    "5fff2877a99bcb65a14a223c",
-    "67f3619e16d4ca195fbd1bd0",
-    "67e5cf90b79d0874e1cf16b0",
-    "571a78f06a1c6300114b8d80",
-    "5af82cf9e066a40001136ace",
-    "67e2a5b83621fdee51b6277e",
-    "66ce541cd8da920539a1c3cc",
-    "6741ce8667002c96f0362d34",
-    "5e4066ed9eec8d2a184e4ff4",
-    "63d9d5072e083033fc895df1",
-    "67d9a91f56a568412eecda60",
-    "67f6a640d2046b13fcf33328",
-    "66083cd0a45e1ce399e6a85f",
-    "67851f4cba98f2087f182764",
-    "67dc135e06eee79a0b0324ef",
-    "604fa685e33606f9a0ee8189",
-    "609bfd97a7c95881330491d4",
-    "6122f45e2e93a3ff9a7b7a5d",
-    "64feeabd355b506d0512d862",
-    "6606b31155457e4f162ecf5a",
-    "6776b99a8215d150863a71b4"
-  )
-}
-
-# all_excluded_both_days <- c(
-#   "6697c39cfbf1e3381e6ee45c", "65956ab743aa1e8fe002ba3b", "669a6bba1fd09527cf41717a",
-#   "65b26a99fe500245f7a7c750", "677009b08130c3028f6a8a6d", "6161cb3de3d274978d46575b",
-#   "65fc95c627592d85499ae358", "655f8bf6de805f7bd81e5811", "665c5d94303fdf202ac9ded0",
-#   "65fb34c4df61f03ce0dd6dd9", "5d66b4f503b0d900195ca627", "676d40e2915d059bf7ef62e8",
-#   "67d095bc257ecc840642912e", "66645dfa2639fc47c5bca0a6", "67826c0cd5858c9d420da7ff",
-#   "67d0581ffe3bbe5188426aff", "5eef7da8a4868b05c902ef2d", "5fff2877a99bcb65a14a223c",
-#   "67f3619e16d4ca195fbd1bd0", "67e5cf90b79d0874e1cf16b0", "571a78f06a1c6300114b8d80",
-#   "5af82cf9e066a40001136ace", "67e2a5b83621fdee51b6277e", "66ce541cd8da920539a1c3cc",
-#   "6741ce8667002c96f0362d34", "5e4066ed9eec8d2a184e4ff4", "63d9d5072e083033fc895df1",
-#   "67d9a91f56a568412eecda60", "67f6a640d2046b13fcf33328", "66083cd0a45e1ce399e6a85f",
-#   "67851f4cba98f2087f182764", "67dc135e06eee79a0b0324ef", "604fa685e33606f9a0ee8189",
-#   "609bfd97a7c95881330491d4", "6122f45e2e93a3ff9a7b7a5d", "64feeabd355b506d0512d862",
-#   "6606b31155457e4f162ecf5a", "6776b99a8215d150863a71b4", "60e0dc6be0772b7dfdad9b2c",
-#   "67f65a16d76fa76c28091ede", "675436e14d7ef1173a74a5b8", "6774f9e03114a09130a1e78f",
-#   "5a77529ff49c9a0001f2fdbd", "672879d614dce67b8c3090ea", "67f7c74584da18f7cd5fceeb",
-#   "60d9dfd4dcc09cf57dc92cb1", "5bf3199ebe7c7300017b710a", "5c549c6372fd9000018b5968",
-#   "5e5c993cd0394c474f7cc502", "5fabca68273dd403ab40e361", "5fed47cfcb429d79af4f8ded",
-#   "65651805d1afb42ba1a55476", "667971a555af1f83d3f29ae7", "673bf9c0212c1ae07ff6c22e",
-#   "67cd50f22f22938860f85a66"
-# )
 
 exclude_ids <- paste0("output/", exclude_ids)
 data_frames <- data_frames[!(names(data_frames) %in% exclude_ids)]
@@ -1380,67 +1279,7 @@ averages_slopes <- combined_df %>%
     #ns_5_avg = mean(ns_5, na.rm = TRUE),
     ns_6_avg = mean(ns_6, na.rm = TRUE)
   )
-  
 
-
-
-
-
-
-
-
-
-# PLOTS
-# Create a lollipop plot (stem plot)
-# ggplot(data.frame(x_values, y_ns3), aes(x = x_values, y = y_ns3)) +
-#   geom_segment(aes(x = x_values, xend = x_values, y = 0, yend = y_ns3), color = "skyblue", size = 1) + # Thin lines
-#   geom_point(size = 3, color = "black", fill = "lightblue") + # Circles at the end
-#   #theme_minimal() +
-#   labs(title = "Learning Curves for a Single Participant (ns3)", x = "Stimulus Iteration", y = "Proportion Correct") +
-#   scale_x_continuous(breaks = 1:12, limits = c(1, 12)) +
-#   scale_y_continuous(breaks = seq(from = 0, 
-#                                   to = 1, 
-#                                   by = 0.10)) +
-#   theme(
-#     panel.background = element_blank(),
-#     panel.grid.major = element_blank(),
-#     panel.grid.minor = element_blank(),
-#     axis.line = element_line(colour = "black")
-#   )
-
-
-
-# Visualize slopes
-# 2. Bar Plot of Slopes
-# mid_points <- x_values[-length(x_values)] + 0.5
-# ggplot(data.frame(mid_points, Slopes = slopes), aes(x = mid_points, y = Slopes)) +
-#   geom_bar(stat = "identity") +
-#   scale_x_continuous(breaks = 1:12, limits = c(1, 12)) +
-#   scale_y_continuous(breaks = seq(from = 0, 
-#                                   to = 1, 
-#                                   by = 0.10)) +
-#   theme(
-#     panel.background = element_blank(),
-#     panel.grid.major = element_blank(),
-#     panel.grid.minor = element_blank(),
-#     axis.line = element_line(colour = "black")
-#   ) +
-#   labs(title = "Bar Plot of Slopes", x = "Stimulus Iteration", y = "Proportion Correct")
-
-# 3. Scatter Plot of Slopes
-# ggplot(data.frame(mid_points, Slopes = slopes), aes(x = mid_points, y = Slopes)) +
-#   geom_point() +
-#   scale_x_continuous(breaks = 1:12, limits = c(1, 12)) +
-#   scale_y_continuous(breaks = seq(from = 0, 
-#                                   to = 1, 
-#                                   by = 0.10)) +
-#   theme(
-#     panel.background = element_blank(),
-#     panel.grid.major = element_blank(),
-#     panel.grid.minor = element_blank(),
-#     axis.line = element_line(colour = "black")
-#   ) +
-#   labs(title = "Scatter Plot of Slopes", x = "Stimulus Iteration", y = "Proportion Correct")
 
 ######################### MOVING AVERAGE TO FIND ASYMPTOTE #####################
 
@@ -1452,65 +1291,14 @@ calc_asymptote_index <- function(df){ # input must be prop_corr_per_stim_data
   
   trials <- trials %>% select(-stim_iter)
   
-  # ggplot(data.frame(x_vals, trials), aes(x = x_vals, y = trials)) +
-  #   geom_point(size = 3, color = "black", fill = "lightblue") +
-  #   labs(x = "Trial Iteration", y = "Proportion Correct", title = "Example Participant Set Size 6") +
-  #   scale_x_continuous(breaks = 1:12, limits = c(1, 12)) +
-  #   scale_y_continuous(breaks = seq(from = 0,
-  #                                   to = 1,
-  #                                   by = 0.10)) +
-  #   theme(
-  #     panel.background = element_blank(),
-  #     panel.grid.major = element_blank(),
-  #     panel.grid.minor = element_blank(),
-  #     axis.line = element_line(colour = "black")
-  #   )
-  
+
   # Moving average with a window size of 3
   # Calculate the moving average with a window size of 3
   window_size <- 3
   moving_average <- stats::filter(trials, rep(1/window_size, window_size), sides = 2)
   colnames(moving_average) <- colnames(trials)
   # centered moving average
-  
-  # Plot
-  # Create a data frame for the original trials scores
-  # data_original <- data.frame(
-  #   Trial = 1:length(trials),
-  #   Score = trials,
-  #   Type = 'Actual Scores'
-  # )
-  
-  # Create a data frame for the moving average scores
-  # Adjust the trial numbers if needed, depending on how you handle the moving average calculation
-  # data_moving_average <- data.frame(
-  #   Trial = 1:length(moving_average),
-  #   Score = as.numeric(moving_average),  # Ensure numeric values for ggplot
-  #   Type = 'Moving Average'
-  # )
-  
-  # Combine the two data frames
-  # data_combined <- rbind(data_original, data_moving_average)
-  # 
-  # # Plot moving average and observations combined
-  # ggplot(data_combined, aes(x = Trial, y = Score, color = Type)) +
-  #   geom_line(data = data_combined[data_combined$Type == 'Moving Average',], aes(group = 1)) +  # Line for moving average
-  #   geom_point() +  # Points for both types
-  #   scale_color_manual(values = c('Actual Scores' = 'red', 'Moving Average' = 'blue')) +  # Set custom colors
-  #   labs(title = 'Moving Average (ws = 3) of Proportion Correct', x = 'Trial Iteration', y = 'Average Score') +  # Labels
-  #   scale_x_continuous(breaks = 1:12, limits = c(1, 12)) +
-  #   scale_y_continuous(breaks = seq(from = 0, 
-  #                                   to = 1, 
-  #                                   by = 0.10)) +
-  #   theme(
-  #     panel.background = element_blank(),
-  #     panel.grid.major = element_blank(),
-  #     panel.grid.minor = element_blank(),
-  #     axis.line = element_line(colour = "black")
-  #   )
-  
-  
-  # Identify where stabilization occurs
+    # Identify where stabilization occurs
   
   
   # Calculate the change in moving average
@@ -1524,30 +1312,7 @@ calc_asymptote_index <- function(df){ # input must be prop_corr_per_stim_data
   
   # Define the threshold for stabilization
   threshold_value <- 0.1
-  
-  # plot change in moving average
-  
-  #mid_points <- x_vals[-length(x_vals)] + 0.5
-  
-  # 3. Scatter Plot of change in moving average
-  # ggplot(data.frame(mid_points, change_in_moving_average = change_in_moving_average), aes(x = mid_points, y = change_in_moving_average)) +
-  #   geom_point(size = 3) +
-  #   geom_hline(yintercept = 0.1, linetype = "dashed", color = "gray") +
-  #   scale_x_continuous(breaks = 1:12, limits = c(1, 12)) +
-  #   scale_y_continuous(breaks = seq(from = 0, 
-  #                                   to = 1, 
-  #                                   by = 0.02)) +
-  #   theme(
-  #     panel.background = element_blank(),
-  #     panel.grid.major = element_blank(),
-  #     panel.grid.minor = element_blank(),
-  #     axis.line = element_line(colour = "black")
-  #   ) +
-  #   labs(title = "Scatter Plot of Change in Moving Average (Threshold at 0.1)", x = "Stimulus Iteration", y = "Change Moving Average")
-  
-  
-  # Find indices where change is below the threshold
-  #below_threshold_indices <- which(change_in_moving_average < threshold)
+
   
   # Initialize an index for when the criteria are met
   asymptote_index <- rep(NA, ncol(moving_average))
@@ -1571,96 +1336,7 @@ calc_asymptote_index <- function(df){ # input must be prop_corr_per_stim_data
   asymptote_index <- cbind(asymptote_index, set_size)
   
   return(list(asymptote_index = asymptote_index))
-  # 3 ways: 
-  # 1. the first moving average with a change less than 0.1
-  # 2. same as above, but the consecutive moving average also needs to be below threshold
-  # 3. Perhaps the MA should be above 0.8 and the next one should not change too much?
   
-  
-  
-  # plot moving averages again, annotated
-  # ggplot(data_combined, aes(x = Trial, y = Score, color = Type)) +
-  #   geom_line(data = data_combined[data_combined$Type == 'Moving Average',], aes(group = 1)) +  # Line for moving average
-  #   geom_point() +  # Points for both types
-  #   scale_color_manual(values = c('Actual Scores' = 'red', 'Moving Average' = 'blue')) +  # Set custom colors
-  #   labs(title = 'Moving Average (ws = 3) of Proportion Correct', x = 'Trial Iteration', y = 'Average Score') +  # Labels
-  #   scale_x_continuous(breaks = 1:12, limits = c(1, 12)) +
-  #   scale_y_continuous(breaks = seq(from = 0, 
-  #                                   to = 1, 
-  #                                   by = 0.10)) +
-  #   theme(
-  #     panel.background = element_blank(),
-  #     panel.grid.major = element_blank(),
-  #     panel.grid.minor = element_blank(),
-  #     axis.line = element_line(colour = "black")
-  #   ) +
-  #   geom_segment(aes(x = Trial[asymptote_index]-2, y = Score[asymptote_index]-.05, xend = Trial[asymptote_index]-0.05, yend = Score[asymptote_index]),
-  #                arrow = arrow(type = "closed", length = unit(0.2, "inches")), 
-  #                color = "black")  # Draw an arrow
-  
-}
-
-# calculate when each participant reaches an asymptote in their learning
-# output_asymptote <- lapply(prop_corr_per_stim_data, calc_asymptote_index)
-# # a <- list()
-# # for (i in 1:length(prop_corr_per_stim_data)) {
-# #   a[i] <- calc_asymptote_index(prop_corr_per_stim_data[[i]])
-# # }
-# 
-# # save in output df
-# # Transform to wide format
-# asymptote_df <- data.frame(matrix(nrow = length(output_asymptote), ncol = 5))
-# for (i in 1:length(output_asymptote)) {
-#   df_long <- output_asymptote[[i]]
-#   df_wide <- df_long$asymptote_index %>%
-#     pivot_wider(
-#       names_from = set_size,
-#       values_from = asymptote_index,
-#       names_prefix = "asymptote_ns_"
-#     )
-#   # assign the wide df for this participant to the asymptote_df (all participants)
-#   asymptote_df[i,] <- data.frame(df_wide)
-# }
-# colnames(asymptote_df) <- colnames(df_wide) # update col names
-# # update output df
-# output_data_frame <- cbind(output_data_frame, asymptote_df)
-# 
-# 
-# # Extract the values from each participant
-# # Use purrr to extract 'asymptote_index' dataframes and bind them into one dataframe
-# combined_df <- output_asymptote %>%
-#   map(~ .x$asymptote_index) %>%
-#   bind_rows()
-# 
-# 
-# 
-# # PLOT
-# 
-# # Filter out NA values in asymptote_index
-# filtered_df <- combined_df %>%
-#   filter(!is.na(asymptote_index))
-# 
-# # Plotting all set sizes with asymptote_index values
-# ggplot(filtered_df, aes(x = factor(set_size), y = asymptote_index)) +
-#   geom_boxplot(outlier.shape = NA) + # Suppress outliers
-#   guides(color = "none") + # Remove color legend
-#   geom_jitter(aes(color = set_size), width = 0.1, height = 0, alpha = 0.5, size=2) + # Adjust jitter
-#   labs(title = "Asymptote Index across Set Sizes (NAs excluded)",
-#        x = "Set Size",
-#        y = "Asymptote Index") +
-#   scale_x_discrete(labels = c("3", "4", "6")) +
-#   # scale_y_continuous(
-#   #   limits = c(0, 1), # Set limits from 0 to 1
-#   #   breaks = seq(0, 1, by = 0.1) # Set breaks at every 0.1 interval
-#   # ) +
-#   theme(
-#     panel.background = element_blank(),
-#     panel.grid.major = element_blank(),
-#     panel.grid.minor = element_blank(),
-#     axis.line = element_line(colour = "black")
-#   )
-# 
-
 
 
 ################################# Save output variables ######################
@@ -1808,15 +1484,6 @@ write.table(block_index_matrix, b_path , row.names = FALSE, col.names = FALSE, s
 # Reward_matrix: 1 for correct response, 0 for incorrect
 # Block_index_matrix: 1 when it’s the first stimulus of a new block, otherwise 0
 # Setsize matrix: the set size (load) of the current trial
-
-
-############ LOGISTIC REGRESSION ##############################
-# See set size slope in Master et al., 2020, also:
-#In order to more precisely assess the effects of our set size manipulation on 
-#performance, we used a logistic regression to model trial-bytrial accuracy as a 
-#function of previous correct trials (pcor), previous incorrect trials (pinc), 
-#number of trials since the last presentation of the same stimulus (delay), and 
-#set size (ns) as predictors
 
 
 
