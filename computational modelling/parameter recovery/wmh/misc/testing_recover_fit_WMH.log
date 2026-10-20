@@ -1,31 +1,0 @@
-
-init =
-
-    0.0538
-    0.1834
-   -0.2259
-    0.0862
-    0.0319
-
- 1
-Launching updater executable
-Emit=1 subject 1 model 1 iteration 1 exit status=1Iteration 1 took 363.29 seconds.
- 2
-Emit=1 subject 2 model 1 iteration 1 exit status=1Iteration 1 took 392.73 seconds.
- 3
-Emit=1 subject 3 model 1 iteration 1 exit status=0Iteration 1 took 461.34 seconds.
- 4
-Emit=1 subject 4 model 1 iteration 1 exit status=1Iteration 1 took 361.19 seconds.
- 5
-Emit=1 subject 5 model 1 iteration 1 exit status=1Iteration 1 took 359.56 seconds.
- 6
-Emit=1 subject 6 model 1 iteration 1 exit status=1Iteration 1 took 348.20 seconds.
- 7
-Emit=1 subject 7 model 1 iteration 1 exit status=1Iteration 1 took 313.49 seconds.
- 8
-Emit=1 subject 8 model 1 iteration 1 exit status=1Iteration 1 took 360.43 seconds.
- 9
-Emit=1 subject 9 model 1 iteration 1 exit status=0Iteration 1 took 457.97 seconds.
-10
-Emit=1 subject 10 model 1 iteration 1 exit status=0Iteration 1 took 458.17 seconds.
-11

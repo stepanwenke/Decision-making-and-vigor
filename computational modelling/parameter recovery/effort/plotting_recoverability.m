@@ -1,22 +1,19 @@
 clear all
 clc
 
+% Settings
 day = '1';
-iters= '3';
-model='constrained_quadratic';
+model='unconstrained_linear';  % constrained_quadratic, constrained_linear, unconstrained_linear
+%%%%%
 
-target_path = ['day' day filesep iters 'iter' filesep model filesep];
+target_path = ['day' day filesep model filesep];
 addpath('..') % add the one dir above to be able to use identicalCorr function
 
-load([target_path 'output_sim/synthdata_physE_pilot2.mat']) % Simulated parameters
-load([target_path 'output_fit/parameters_physicalE_retest.mat']) % Observed / fitted params
+load([target_path 'output_sim/synthdata_physE.mat']) % Simulated parameters
+load([target_path 'output_fit/parameters_physicalE.mat']) % Observed / fitted params
 
 % Convert observed params to the param space
 beta_simulated = params(:,1);
-
-if model == "constrained_quadratic_beta"
-    beta_simulated = 15./(1+exp(-params(:,1)));
-end
 
 if model == "constrained_linear" || model == "constrained_quadratic"
     beta_simulated = exp(params(:,1));
@@ -24,7 +21,7 @@ end
 
 k_simulated = params(:,2);
 
-if model == "constrained_quadratic" || model == "constrained_quadratic_beta"
+if model == "constrained_quadratic" 
     k_simulated = 1./(1+exp(-params(:,2)));
 end
 

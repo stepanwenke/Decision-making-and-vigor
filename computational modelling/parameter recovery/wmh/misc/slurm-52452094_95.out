@@ -1,9 +1,0 @@
-Array task ID = 580
-An unexpected error has occurred.
-To resolve this issue, contact <a href="https://www.mathworks.com/pi_gene_mci_glnxa64">Technical Support</a>.
-terminate called after throwing an instance of 'matlabconnector::installationsregistry::InstallationsRegistryError'
-  what():  InstallationsRegistry:getMatlabConnectorVersion: More than one MATLAB Connector records were found
-munmap_chunk(): invalid pointer
-
-MATLAB is exiting because of fatal error
-/var/lib/slurm/slurmd/job52491467/slurm_script: line 28: 576966 Killed                  ${MATLAB} -batch "recover_fit_K_WMH(${subject},${model});exit" > recover_fit_K_WMH_${subject}.log

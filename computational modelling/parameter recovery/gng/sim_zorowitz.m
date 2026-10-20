@@ -27,23 +27,7 @@ Q=zeros(2,24)+0.5;  % two options for each of 24 robots
 for t=1:length(a) % trial 1 to the maximum of the action vector which should be equal to number of trials
 
 	q = Q(:,s(t)); 
-
-    %%% debugging delete afterwards %%%
-
-    % Print debugging information
-%     disp(['t = ', num2str(t)]);
-%     disp(['val(t) = ', num2str(val(t))]);
-%     
-%     % Perform the check
-%     if val(t) < 1 || val(t) > length(q)
-%         error('Index val(t) is out of bounds. val(t) = %d, length(q) = %d', val(t), length(q));
-%     end
-%     
-%     if mod(val(t), 1) ~= 0
-%         error('Index val(t) is not an integer. val(t) = %f', val(t));
-%     end
-
-    %%%
+ 
 
     q(val(t)) = q(val(t)) + eps;    % add Pavlovian effect 
 
@@ -77,29 +61,18 @@ for t=1:length(a) % trial 1 to the maximum of the action vector which should be 
         if sham == 0 % in 80% cases
 %             if val(t) == 1 % win valence
                 r(t) = 1;  % reward for correct action in positive valence
-%             else % avoid loss valence
-%                 r(t) = 1;  % reward for correct action in negative valence
-%             end
         else % in 20% cases
 %             if val(t) == 1 % win valence
                 r(t) = 0;  % bad luck in positive valence
-%             else % avoid loss valence
-%                 r(t) = 0;  % bad luck in negative valence
-%             end
         end
     else % if agent chose the incorrect option
         if sham == 0 % in 80% cases
 %             if val(t) == 1 % win valence
                 r(t) = 0;  % punishment for incorrect action in positive valence
-%             else % avoid loss valence
-%                 r(t) = 0;  %  punishment for incorrect action in negative valence
-%             end
+
         else % in 20% cases
 %             if val(t) == 1 % win valence
                 r(t) = 1;  % good luck in positive valence
-%             else % avoid loss valence
-%                 r(t) = 1;  % good luck in positive valence
-%             end
         end
     end
     

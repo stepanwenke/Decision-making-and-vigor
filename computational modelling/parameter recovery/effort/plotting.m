@@ -1,18 +1,19 @@
 clear
 
+% Settings
 real=true;
-real_suffix='';
 day='1';
-iters='3';
-model='constrained_quadratic_beta';
+model='unconstrained_linear';
+%%%%%%%%%%%%%
 
-target_path = ['day' day filesep iters 'iter' filesep model];
-data_path = ['../../comp_modelling_day' day '-no exclusions/Effort/physical/data_physical_effort_retest.mat'];
+real_suffix='';
+target_path = ['day' day filesep model];
+data_path = ['../../comp_modelling_session' day '/Effort/physical/data_physical_effort.mat'];
 
 if real==false
-    load([target_path '/output_sim/synthdata_physE_pilot2.mat']) % Simulated parameters     
+    load([target_path '/output_sim/synthdata_physE.mat']) % Simulated parameters     
 else
-    load([target_path '/output_sim/synthdata_from_real_params_physE_pilot2.mat']) % Simulated parameters from real params
+    load([target_path '/output_sim/synthdata_from_real_params_physE.mat']) % Simulated parameters from real params
     load(data_path); % real data
     
     ELevel = Elevel;

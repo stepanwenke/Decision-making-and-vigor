@@ -2,31 +2,18 @@
 
 clear all;
 
-%load('design_matrix.mat')
-% load('C:\Users\stewe\pavlovia\retest-decision-battery\analysis\modelling_battery\pilot2\GNG\gonogo_stimulus_matrix.csv')
-% load('C:\Users\steweq\pavlovia\retest-decision-battery\analysis\modelling_battery\pilot2\GNG\gonogo_condition_matrix.csv')
-% load design matrix
-day='2';
-iters='3';
+% Settings
+day='1';
 model='unconstrained_linear';
-target_path=['day' day filesep iters 'iter' filesep model filesep];
+%%%%%%
+
+target_path=['day' day filesep model filesep];
 addpath(target_path);
 output_dir=[target_path 'output_sim' filesep];
-fit_file_template='';
+fit_file_template=['240208_EM_-' model '-ite'];
 
-if model == "unconstrained_linear" && day == '1'
-    fit_file_template = '240208_EM_-linear_unconstrained-ite';
-elseif model == "unconstrained_linear" && day == '2'
-    fit_file_template = '240208_EM_-unconstrained_linear-ite';
-elseif model == "constrained_linear" && day == '1'
-    fit_file_template = '240208_EM_-linear_constrained-ite';
-elseif model == "constrained_linear" && day == '2'
-    fit_file_template = '240208_EM_-constrained_linear-ite';
-elseif model == "constrained_quadratic"
-    fit_file_template = '240208_EM_-quadratic_lapse_ll_physicalE-ite';
-end
 
-target_path = ['../../comp_modelling_day', day, '-prg_exclusions/Effort/physical' filesep model filesep];
+target_path = ['../../comp_modelling_session', day, '/Effort/physical' filesep model filesep];
 
 pl=[];
 for ite=1:10
@@ -45,13 +32,13 @@ load(filename);
 
 
 samples = length(E);
-iter_num = 9;
+iter_num = 1;
 
 for s = 1:samples
     for i = 1:iter_num
     parameters = E(:,s);
 
-    trial_matrix = shuffle_array(1,str2double(iters));
+    trial_matrix = shuffle_array(1,3); % 1: Full matrix; 3 iterations (75 trials)
     trial_num = length(trial_matrix);
     stake_vector = trial_matrix(:,2)';
     effort_vector = trial_matrix(:,1)';
@@ -95,4 +82,4 @@ end
 A_real(A_real == 0) = 2;
 
 % Save the arrays in a .mat file
-save([output_dir 'synthdata_from_real_params_physE_pilot2.mat'], 'A_real', 'R_real', 'ELevel_real', 'params');
+save([output_dir 'synthdata_from_real_params_physE.mat'], 'A_real', 'R_real', 'ELevel_real', 'params');

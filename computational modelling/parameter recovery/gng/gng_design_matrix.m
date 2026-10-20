@@ -2,6 +2,8 @@
 
 % Import
 % Specify the file paths
+addpath('runsheets/');
+
 robots_s00_path = 'robots_runsheet_s00_16.csv';
 stimuli_s00_path = 'stimuli_runsheet_s00_16.csv';
 robots_s03_path = 'robots_runsheet_s03_16.csv';

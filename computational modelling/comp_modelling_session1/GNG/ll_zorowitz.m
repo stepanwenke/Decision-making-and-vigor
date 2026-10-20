@@ -1,9 +1,3 @@
-%%%%%%%%%%%%%%%%%
-%%% Written by Quentin J. M. Huys, UCL, London 2011
-%%% Reference:
-%%% Guitart-Masip M, Quentin JM, Fuentemilla LL, Dayan P, Duzel E, Dolan RJ (2012)
-%%% Go and no-go learning in reward and punishment: Interaction between affect and effect NeuroImage doi:10.1016/j.neuroimage.2012.04.024
-
 function [l,dl] = ll_zorowitz (x, a, r, s, val, Z,doprior)
 beta 	  = exp(x(1));            % sensitivity to reward          
 alpha	  = 1./(1+exp(-x(2)));     % learning rate

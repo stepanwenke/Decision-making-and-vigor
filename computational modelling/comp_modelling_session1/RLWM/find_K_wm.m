@@ -1,13 +1,11 @@
 clear;
 
-load data_RLWM_retest.mat
+load data_RLWM.mat
 
-ff = {'k_rho_alpha_ll_rlwm', ...
-      'k_rho_alpha_decay_ll_rlwm', ...
-      'k_rho_alpha_decay_bias_ll_rlwm', ...
-      'k_rho_alpha_decay_bias_lapse_ll_rlwm'};
+ff = {'ll_wmh'};
+fixed_beta = 100; % Fixed beta at 100 when estimating WM capacity K
 
-Np=[2,3,4,5]; % specify the number of parameters for each model (capacity K)
+Np=[5]; % specify the number of parameters for each model (capacity K)
 
 options=optimset('display','off','DerivativeCheck','on');
 warning('off','optim:fminunc:SwitchingMethod')
@@ -41,7 +39,7 @@ for f=1:size(ff,2)
                 init=.1*randn(Np(f),1); % initialize random sample from normal prob distr
                 
                 % Find the minimum from ll_rlwm.m (negative log-likelihood of the RLWM model)
-                [est,fval,ex]=fminsearch(@(x) feval(ff{f},x, a, r, s, b, set_size, k, Z,0),init,options);
+                [est,fval,ex]=fminsearch(@(x) feval(ff{f},x, a, r, s, b, set_size, k, Z,0,fixed_beta),init,options);
                 
                 % store NLL of current iteration
                 ll(ite) = fval;
@@ -67,6 +65,6 @@ for f=1:size(ff,2)
         %end
     end
     
-    save(['capacity_retest_' ff{f} '.mat'], 'K', 'LL', 'P');
+    save(['capacity_' ff{f} '.mat'], 'K', 'LL', 'P');
 
 end

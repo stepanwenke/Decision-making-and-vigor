@@ -1,4 +1,4 @@
-function [l,dl] = ll_rlwm(x, a, r, Ef, Z,doprior)
+function [l,dl] = constrained_quadratic(x, a, r, Ef, Z,doprior)
 
 beta 	  = exp(x(1));             % sotmax inv temp
 k    	  = 1./(1+exp(-x(2)));     % discount rate

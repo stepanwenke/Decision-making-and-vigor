@@ -1,51 +1,16 @@
-%function [] = exploring_fit_GNG_ite(day,dtset,remove_robots,it_num)
-%%%%%%%%%%%%%%%%%
-%%% Written by Quentin J. M. Huys, UCL, 2011, modified by Lieke de
-%%% Boer
-%%% References:
-%%% Guitart-Masip M, Quentin JM, Fuentemilla LL, Dayan P, Duzel E, Dolan RJ (2012)
-%%% Go and no-go learning in reward and punishment: Interaction between affect and effect NeuroImage doi:10.1016/j.neuroimage.2012.04.024
-%%% de Boer, L., J Axelsson, R Chowdhury, K Riklund, RJ Dolan, L Nyberg, L
-%%% B�ckman, M Guitart-Masip (2019).Dorsal striatal dopamine D1 receptor availability predicts an
-%%% instrumental bias in action learning. PNAS doi: 10.1073/pnas.1816704116
+clear;
 
-%clear;
-%cd C:/Users/stewe/pavlovia/beta-decision-battery/analysis/modelling_battery/pilot2/Effort/physical
 %% to start parfor
-% c=parcluster;
-% c.NumWorkers=16 ; % 22 is the maxnumber of workers you're allowed
-% parpool(16) ; % same thing
 
 dt = '240208_EM_';
-dtset = {'data_GNG_retest'}; % put in the name of your datafile(s) (more than one is allowed). should contain A, R and S, and
-% (ideally) a subject list.
-%day=1;
-
-% if day==1
-%     % dtset = {'output/synthdata_physE_pilot2_2','output/synthdata_physE_pilot2_3','output/synthdata_physE_pilot2_4',...
-%     %     'output/synthdata_physE_pilot2_5','output/synthdata_physE_pilot2_6','output/synthdata_physE_pilot2_7',...
-%     %     'output/synthdata_physE_pilot2_8','output/synthdata_physE_pilot2_9','output/synthdata_physE_pilot2_10',...
-%     %     'output/synthdata_physE_pilot2_11'}; % put in the name of your datafile(s) (more than one is allowed). should contain A, R and S, and
-% else
-%     % dtset = {'output/synthdata_physE_pilot2day2'}; % put in the name of your datafile(s) (more than one is allowed). should contain A, R and S, and
-% end
-% (ideally) a subject list.
-
+dtset = {'data_GNG'}; % put in the name of your datafile(s) (more than one is allowed). should contain A, R and S, and
 
 for setind = 1:length(dtset)
 
     load(dtset{setind},"A","R","S","C","Val","params") %make all rewards scale to 1, 0 and -1
-    %     for i = 1:length(R)
-    %         r=R{i};
-    %         r=r./abs(r);
-    %         r(isnan(r))=0;
-    %         R{i}=r;
-    %     ends
+
     dtsetnm = strsplit(dtset{setind}, '_');
-    dtsetnm = dtsetnm{3}; % 0 or 1 based on remove_robots
-    % if ~exist(['day' num2str(day) '_' dtsetnm], 'file')
-    %     mkdir(['day' num2str(day) '_' dtsetnm])
-    % end
+    dtsetnm = dtsetnm{2}; % 0 or 1 based on remove_robots
 
     dosave = 1;
     docomp = 0;
@@ -53,11 +18,6 @@ for setind = 1:length(dtset)
     Nsample = 2000;
 
     ff{1} = 'll_zorowitz'; % alpha and beta
-
-    % only positive condition
-    %ff{1} = 'pos_ll_zorowitz'; % alpha and beta
-
-    %Npar=[7]; % specify the number of parameters for each model
 
     % only positive condition
     Npar=[4]; % specify the number of parameters for each model
@@ -146,11 +106,8 @@ for setind = 1:length(dtset)
                 et(emit,:,:) = E;
                 lt(emit,:,:) = [LL; PL];
 
-                % if dosave;
-                %     eval(['save day' num2str(day) '_' num2str(trial_rep) '_' dtsetnm filesep ld ' mu nu E V LL PL par et lt Z exx emit ld ff whichinf;']);
-                % end
                 if dosave;
-                    eval(['save ' dtsetnm filesep ld ' mu nu E V LL PL par et lt Z exx emit ld ff whichinf;']);
+                    eval(['save ' 'output' filesep ld ' mu nu E V LL PL par et lt Z exx emit ld ff whichinf;']);
                 end
 
                 % check convergence ...........................................
@@ -162,7 +119,7 @@ for setind = 1:length(dtset)
     % quit
     pl=[];
     for ite=1:10 % For each iteration
-        load ([dtsetnm filesep dt '-' ff{1} '-ite' num2str(ite)]); % load log-likelihood
+        load (['output' filesep dt '-' ff{1} '-ite' num2str(ite)]); % load log-likelihood
         pl(ite)=sum(PL(1:end)); % add it to variable pl
     end
 
@@ -170,13 +127,11 @@ for setind = 1:length(dtset)
     [min_value, min_index] = min(pl);
     
     % Construct the filename based on the index
-    filename = sprintf([dtsetnm filesep '240208_EM_-ll_zorowitz-ite%d.mat'], min_index);
+    filename = ['output' filesep '240208_EM_-ll_zorowitz-ite' num2str(min_index) '.mat'];
     
     % Load the file
     load(filename);
-    
-    % Load parameters
-    %load([dtsetnm filesep '240208_EM_-ll_zorowitz-ite10.mat']) % load best iteration (lowest posterior likelihood (pl))
+
     % Transform parameters
     beta = exp(E(1,:)); % beta params (row 1:reward, row 2:punishment)
     alpha = 1./(1+exp(-E(2,:))); % alpha params (row 1:reward, row 2:punishment)
@@ -189,38 +144,32 @@ for setind = 1:length(dtset)
     title('Histogram of beta');
     xlabel('beta');
     ylabel('Frequency');
-    saveas(gcf, 'retest/beta_retest.jpg');  % Save histogram of k as JPEG file
+    saveas(gcf, 'output/beta.jpg');  % Save histogram of k as JPEG file
 
     figure;
     hist(alpha,50);
     title('Histogram of alpha');
     xlabel('alpha');
     ylabel('Frequency');
-    saveas(gcf, 'retest/alpha_retest.jpg');  % Save histogram of beta as JPEG file
+    saveas(gcf, 'output/alpha.jpg');  % Save histogram of beta as JPEG file
 
     figure;
     hist(eps,50);
     title('Histogram of eps');
     xlabel('eps');
     ylabel('Frequency');
-    saveas(gcf, 'retest/eps_retest.jpg');  % Save histogram of beta as JPEG file
+    saveas(gcf, 'output/eps.jpg');  % Save histogram of beta as JPEG file
 
     figure;
     hist(lapse,50);
     title('Histogram of lapse');
     xlabel('lapse');
     ylabel('Frequency');
-    saveas(gcf, 'retest/lapse_retest.jpg');  % Save histogram of beta as JPEG file
+    saveas(gcf, 'output/lapse.jpg');  % Save histogram of beta as JPEG file
 
 
 
-    save("retest/parameters_gng_retest.mat", 'beta','alpha','eps','lapse','mu','nu');
+    save("output/parameters_gng.mat", 'beta','alpha','eps','lapse','mu','nu');
 end
 % % quit
-% pl=[];
-% for ite=1:10
-%     load ([dtsetnm filesep dt '-' ff{1} '-ite' num2str(ite)]);
-%     pl(ite)=sum(PL(1:end));
-% end
-%
 

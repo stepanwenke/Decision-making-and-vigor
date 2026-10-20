@@ -1,35 +1,16 @@
-%%%%%%%%%%%%%%%%%
-%%% Written by Quentin J. M. Huys, UCL, 2011, modified by Lieke de
-%%% Boer
-%%% References:
-%%% Guitart-Masip M, Quentin JM, Fuentemilla LL, Dayan P, Duzel E, Dolan RJ (2012)
-%%% Go and no-go learning in reward and punishment: Interaction between affect and effect NeuroImage doi:10.1016/j.neuroimage.2012.04.024
-%%% de Boer, L., J Axelsson, R Chowdhury, K Riklund, RJ Dolan, L Nyberg, L
-%%% B�ckman, M Guitart-Masip (2019).Dorsal striatal dopamine D1 receptor availability predicts an
-%%% instrumental bias in action learning. PNAS doi: 10.1073/pnas.1816704116
-
 clear;
-%cd C:/Users/stewe/pavlovia/retest-decision-battery/analysis/modelling_battery/pilot_retest/Effort/physical
 %% to start parfor
-% c=parcluster;
-% c.NumWorkers=16 ; % 22 is the maxnumber of workers you're allowed
-% parpool(16) ; % same thing
 
 dt = '240208_EM_';
 
-dtset = {'data_physical_effort_retest'}; % put in the name of your datafile(s) (more than one is allowed). should contain A, R and S, and
+dtset = {'data_physical_effort'}; % put in the name of your datafile(s) (more than one is allowed). should contain A, R and S, and
 % (ideally) a subject list.
 
 
 for setind = 1:length(dtset)
     
     load(dtset{setind}) %make all rewards scale to 1, 0 and -1
-    %     for i = 1:length(R)
-    %         r=R{i};
-    %         r=r./abs(r);
-    %         r(isnan(r))=0;
-    %         R{i}=r;
-    %     end
+
     dtsetnm = strsplit(dtset{setind}, '_');
     dtsetnm = dtsetnm{3};
   
@@ -38,7 +19,9 @@ for setind = 1:length(dtset)
     docheck = 0;
     Nsample = 2000;
     
-    ff{1} = 'constrained_quadratic_beta'; % alpha and beta
+    % Choose a desired model to be fitted: constrained_quadratic,
+    % constrained_linear, and unconstrained linear
+    ff{1} = 'unconstrained_linear'; 
     
     if ~exist(ff{1}, 'dir')
         mkdir(ff{1})
@@ -97,7 +80,7 @@ for setind = 1:length(dtset)
                                 mE=est;
                                 mx=nex;
                             end
-                        end
+                    _retest    end
                         
                         fval=mf;
                         est=mE;
@@ -156,25 +139,17 @@ filename = [ff{1} '/240208_EM_-' ff{1} '-ite' num2str(min_index) '.mat'];
 % Load the file
 load(filename);
 
-
-%load('effort/240208_EM_-ll_physicalE-ite9.mat')
-
 % Extract beta and k parameters from 'E'
 beta = E(1,:);
 k = E(2,:);
 
-if ff{1} == "quadratic_lapse_ll_physicalE"
+if ff{1} == "constrained_quadratic"
     beta   = exp(E(1,:));             % sotmax inv temp
     k   = 1./(1+exp(-E(2,:)));     % discount rate
 end
 
 if ff{1} == "linear_constrained"
     beta   = exp(E(1,:));             % sotmax inv temp
-end
-
-if ff{1} == "constrained_quadratic_beta"
-    beta   = 15./(1+exp(-E(1,:)));            % sotmax inv temp
-    k   = 1./(1+exp(-E(2,:)));     % discount rate
 end
 
 g         = 1./(1+exp(-E(3,:)));      % lapse rate
@@ -191,25 +166,25 @@ hist(k,50);
 title('Histogram of k');
 xlabel('k');
 ylabel('Frequency');
-saveas(gcf, [ff{1} '/k_retest.jpg']);  % Save histogram of k as JPEG file
+saveas(gcf, [ff{1} '/k.jpg']);  % Save histogram of k as JPEG file
 
 figure;
 hist(beta,50);
 title('Histogram of beta');
 xlabel('beta');
 ylabel('Frequency');
-saveas(gcf, [ff{1} '/beta_retest.jpg']);  % Save histogram of beta as JPEG file
+saveas(gcf, [ff{1} '/beta.jpg']);  % Save histogram of beta as JPEG file
 
 figure;
 hist(g,50);
 title('Histogram of lapse');
 xlabel('lapse');
 ylabel('Frequency');
-saveas(gcf, [ff{1} '/lapse_retest.jpg']);  % Save histogram of beta as JPEG file
+saveas(gcf, [ff{1} '/lapse.jpg']);  % Save histogram of beta as JPEG file
 
 
 
 % Save beta and k parameters to a .mat file
-save([ff{1} '/parameters_physicalE_retest.mat'], 'beta', 'k', 'g','mu','nu');
+save([ff{1} '/parameters_physicalE.mat'], 'beta', 'k', 'g','mu','nu');
 
 

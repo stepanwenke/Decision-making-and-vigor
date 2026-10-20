@@ -61,13 +61,13 @@ prg_excluded_day2 <- c()
 ```{r load_data}
 # Day 1
 
-data_day1 <- read.csv("comp_modelling/session1_comp_params.csv")
+data_day1 <- read.csv("../data/comp_modelling/session1_comp_params_anonymized.csv")
 data_day1 <- data_day1 
 
 
-quest_data_day1_full_id <- read.csv("../output/session1/questionnaire_scores_high_means_apathy.csv")
-quest_data_day1_full_id <- quest_data_day1_full_id %>%
-  mutate(subjID = paste0("output/",subjID))
+# High scores in the BA scale represents apathy
+quest_data_day1_full_id <- read.csv("../output/session1/questionnaire_scores.csv")
+
 
 # data_day1_quests <- cbind(data_day1,quest_data_day1)
 data_day1_quests <- merge(
@@ -78,25 +78,26 @@ data_day1_quests <- merge(
 
 ### WMH Params ###
 # Load  
-data_day1_wmh <- read.csv("comp_modelling/session1/wmh_params.csv")
+data_day1_wmh <- read.csv("../data/comp_modelling/session1/wmh_params_anonymized.csv")
 
 # and append it to the prg dataset to later verify that alpha and rho from wmh model does not affect the EFA
-data_day1_quests_wmh <- cbind(data_day1_quests, data_day1_wmh)
+data_day1_quests_wmh <- merge(
+  data_day1_quests,
+  data_day1_wmh,
+  by = "subjID"
+)
 
 
 
 # Day 2
 
-data_day2 <- read.csv("comp_modelling/session2_comp_params.csv")
+data_day2 <- read.csv("../data/comp_modelling/session2_comp_params_anonymized.csv")
 data_day2 <- data_day2 
 # %>%
 #   select(-c(phys_beta, phys_k, phys_g))
 
 quest_data_day2_full_id <- read.csv("../output/session2/questionnaire_scores.csv")
 
-quest_data_day2_full_id <- quest_data_day2_full_id %>%
-  mutate(subjID = ifelse(subjID == "67e6e73a9192e805dad3a03", "67e6e73a9a192e805dad3a03", subjID)) %>%
-  mutate(subjID = paste0("output/",subjID))
 
 # Merge the wrong subject so it has only row
 quest_data_day2_full_id <- quest_data_day2_full_id %>%
@@ -119,14 +120,14 @@ data_day2_quests$subjID <- gsub("output/", "", data_day2_quests$subjID)
 
 
 # Load performance measures
-rlwm_performance <- read.csv("../output/session1/rlwm_performance.csv")
+rlwm_performance <- read.csv("../output/session1/rlwm_performance_anonymized.csv")
 rlwm_performance <- rlwm_performance %>%
   rename(rlwm_performance = prop_corr_all_set_sizes)
-gng_performance <- read.csv("../output/session1/gng_performance.csv")
+gng_performance <- read.csv("../output/session1/gng_performance_anonymized.csv")
 gng_performance <- gng_performance %>%
-  rename(subjID = id, gng_performance = Overall) %>%
+  rename(gng_performance = Overall) %>%
   select(subjID, gng_performance)
-gng_measures <- read.csv("../output/session1/gng_measures.csv")
+gng_measures <- read.csv("../output/session1/gng_measures_anonymized.csv")
 effort_performance <- read.csv("../output/session1/effort/participant_avg.csv")
 effort_performance <- effort_performance %>%
   rename(subjID = participant, effort_accepted = prop) %>%
@@ -144,7 +145,11 @@ data_day1_measures <- merge(
   by = "subjID"
 )
 
-data_day1_measures <- cbind(data_day1_measures, gng_measures)
+data_day1_measures <- merge(
+  data_day1_measures,
+  gng_measures,
+  by = "subjID"
+)
 
 data_day1_measures <- data_day1_measures %>% 
   select(-X)
@@ -154,6 +159,13 @@ data_day1_measures <- merge(
   effort_performance,
   by = "subjID"
 )
+
+# Add effort rt betas
+effort_betas_day1 <- read.csv('../output/session1/effort/effort_betas_day_1.csv')
+foraging_betas_day1 <- read.csv('../output/session1/foraging/foraging_betas_day_1.csv')
+
+# load responses of AMI
+ami_responses <- read.csv(paste0("../output/session1/ami_responses_anonymized.csv"))
 
 ```
 # Descriptive stats of the parameters 
@@ -242,47 +254,82 @@ nice_full_table <- nice_table(full_table, title = c("Supplemental Table", "Descr
 nice_short_table
 
 # Create descriptive plots for all parameters in df short_table_data
+# Define parameters and display names
+key_params_all <- c("rlwm_alpha", "gng_beta", "gng_eps", "foraging_exit_threshold", "phys_k")
 
-### Make a boxplot ###
-# Define the parameters and their display names
-key_params <- c("rlwm_alpha", "gng_beta", "gng_eps", "foraging_exit_threshold", "phys_k")
-param_rename <- c(
-  "RLWM Alpha" = "rlwm_alpha",
-  "GNG Beta" = "gng_beta",
-  "GNG Epsilon" = "gng_eps",
+# Full mapping: New Name = Old Column Name
+param_rename_full <- c(
+  "RLWM α" = "rlwm_alpha",
+  "GNG β" = "gng_beta",
+  "GNG ε" = "gng_eps",
   "Foraging Exit Threshold" = "foraging_exit_threshold",
-  "Effort K" = "phys_k"
+  "Effort κ" = "phys_k"
 )
 
-# Reshape data for ggplot (long format)
-plot_data <- data_day1 %>%
-  select(all_of(key_params)) %>%
-  rename(!!!param_rename) %>%
-  pivot_longer(cols = everything(), names_to = "Parameter", values_to = "Value")
+# Split into two groups based on scale
+group_small <- c("gng_beta","foraging_exit_threshold")      
+group_large <- c("phys_k", "rlwm_alpha","gng_eps")     
 
-# Create the simple boxplot
-p <- ggplot(plot_data, aes(x = Parameter, y = Value, fill = Parameter)) +
-  geom_boxplot(outlier.color = "red", outlier.shape = 16, alpha = 0.8) +
-  theme_minimal(base_size = 14) +
-  theme(
-    legend.position = "none",       # Remove legend since x-axis labels are clear
-    axis.text.x = element_text(angle = 45, hjust = 1), # Tilt labels for readability
-    panel.grid.major.y = element_line(color = "grey90"),
-    panel.grid.minor = element_blank()
-  ) +
-  labs(
-    x = NULL, 
-    y = "Value",
-    title = "Distribution of Key Model Parameters"
-  ) +
-  scale_fill_brewer(palette = "Set2") # Professional color palette
+# Define a fixed color vector matching the order of your renamed parameters
+# Order must match the order in param_rename_full (or we'll map by name later)
+fixed_colors <- c(
+  "RLWM α" = "#AEC7E8",   # Pastel Blue
+  "GNG β" = "#FFBB78",    # Pastel Orange
+  "GNG ε" = "#98DF8A",    # Pastel Green
+  "Foraging Exit Threshold" = "#FF9896", # Pastel Red
+  "Effort κ" = "#C5B0D5"  # Pastel Purple/Brownish (or use "#DDBEA9" for true pastel brown)
+)
 
-# Print the plot
-print(p)
+# Function to create a boxplot with jittered points and hard-coded colors
+create_boxplot_jitter <- function(data, params, title_suffix) {
+  # 1. Select only the columns we want
+  data_subset <- data %>% select(all_of(params))
+  
+  # 2. Create a safe rename vector for ONLY these parameters
+  rename_vec <- param_rename_full[param_rename_full %in% params]
+  
+  # 3. Rename and reshape
+  plot_data <- data_subset %>%
+    rename(!!!rename_vec) %>%
+    pivot_longer(cols = everything(), names_to = "Parameter", values_to = "Value")
+  
+  # Convert Parameter to a factor to control order
+  plot_data$Parameter <- factor(plot_data$Parameter, levels = unique(plot_data$Parameter))
+  
+  ggplot(plot_data, aes(x = Parameter, y = Value, fill = Parameter)) +
+    geom_jitter(width = 0.2, height = 0, alpha = 0.6, color = "black", size = 1.5) +
+    geom_boxplot(outlier.color = NA, alpha = 0.8, width = 0.6) +
+    
+    theme_minimal(base_size = 14) +
+    theme(
+      legend.position = "none",
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      panel.grid.major.y = element_line(color = "grey90"),
+      panel.grid.minor = element_blank()
+    ) +
+    labs(
+      x = NULL,
+      y = "Parameter value",
+      title = paste("Distribution of Key Model Parameters:", title_suffix)
+    ) +
+    # Apply hard-coded colors by name
+    scale_fill_manual(
+      values = fixed_colors,
+      limits = levels(plot_data$Parameter)
+    )+
+    # Force y-axis to start at 0
+    scale_y_continuous(limits = c(0, NA), expand = expansion(mult = c(0.05, 0.1))) 
+}
 
+# Create and print both plots
+p_small <- create_boxplot_jitter(data_day1, group_small, "")
+p_large <- create_boxplot_jitter(data_day1, group_large, "")
+
+# Display plots
+print(p_small)
+print(p_large)
 # Optional: Save to file
 # ggsave("parameter_boxplot.png", p, width = 8, height = 5, dpi = 300)
-
 
 ```
 
@@ -341,55 +388,6 @@ ggplot(quest_long, aes(x = Score)) +
        x = "Score", y = "Count")
 ```
 
-# Latent profile analysis 
-
-```{r}
-
-library(tidyLPA)
-
-# --------------------------
-# 1. Prepare data (standardize, remove subjID)
-# --------------------------
-scaled_data <- data_day1 %>%
-  select(rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold, phys_k) %>%
-  scale() %>%
-  as.data.frame()
-
-# --------------------------
-# 2. Estimate LPA model
-# --------------------------
-results_z <- estimate_profiles(
-  scaled_data,
-  n_profiles = 3,
-  models = 3
-)
-
-# --------------------------
-# 3. Extract profile means
-# --------------------------
-estimates <- get_estimates(results_z)
-
-profile_means_z <- estimates %>%
-  filter(Category == "Means") %>%
-  select(Class, Parameter, Estimate)
-
-# --------------------------
-# 4. Plot line plot of profiles
-# --------------------------
-ggplot(profile_means_z,
-       aes(x = Parameter, y = Estimate,
-           group = as.factor(Class), color = as.factor(Class))) +
-  geom_line(size = 1.2) +
-  geom_point(size = 2) +
-  theme_minimal(base_size = 14) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  labs(title = "Latent Profiles (Standardized Data)",
-       x = "Variable", y = "Mean (z-score)",
-       color = "Profile")
-
-```
-
-
 # Day 1
 
 ### EFA
@@ -408,6 +406,10 @@ fa_data_day1_constrained_quadratic_prg <- data_day1_constrained_quadratic_prg %>
   select(rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold, phys_k)  # Exclude non-FA relevant columns
 
 
+
+
+# EFA subject vector
+EFA_subjID <- data_day1_constrained_quadratic_prg$subjID
 
 
 
@@ -550,22 +552,32 @@ wmh_efa_pa$loadings
 
 ```{r day1_cor_1}
 # Add factor scores to the data
-data_day1_constrained_quadratic_prg_with_factors <- data_day1_constrained_quadratic_prg %>%
-  mutate(
-    factor1_pa = fa_day1_constrained_quadratic_prg_pa$scores[, 1],
-    factor2_pa = fa_day1_constrained_quadratic_prg_pa$scores[, 2],
-    factor1 = fa_day1_constrained_quadratic_prg$scores[, 1],
-    factor2 = fa_day1_constrained_quadratic_prg$scores[, 2]
-  )
+RL_factor_pa <- fa_day1_constrained_quadratic_prg_pa$scores[, 1]
+Vigor_factor_pa <- fa_day1_constrained_quadratic_prg_pa$scores[, 2]
+RL_factor <- fa_day1_constrained_quadratic_prg$scores[, 1]
+Vigor_factor <- fa_day1_constrained_quadratic_prg$scores[, 2]
 
-# Add factor scores to the quests data
-data_day1_constrained_quadratic_prg_quests <- data_day1_constrained_quadratic_prg_quests %>%
-  mutate(
-    factor1_pa = fa_day1_constrained_quadratic_prg_pa$scores[, 1],
-    factor2_pa = fa_day1_constrained_quadratic_prg_pa$scores[, 2],
-    factor1 = fa_day1_constrained_quadratic_prg$scores[, 1],
-    factor2 = fa_day1_constrained_quadratic_prg$scores[, 2]
-  )
+
+factor_scores_output <- data.frame(
+    subjID = EFA_subjID,  
+    factor1_pa = RL_factor_pa,
+    factor2_pa = Vigor_factor_pa,
+    factor1 = RL_factor,
+    factor2 = Vigor_factor
+)
+
+data_day1_constrained_quadratic_prg_with_factors <- merge(
+  data_day1_constrained_quadratic_prg,
+  factor_scores_output,
+  by = "subjID"
+)
+
+data_day1_constrained_quadratic_prg_quests <- merge(
+  data_day1_constrained_quadratic_prg_quests,
+  factor_scores_output,
+  by = "subjID"
+)
+
 
 # Reduce the quests data for better readability
 data_day1_constrained_quadratic_prg_quests <- data_day1_constrained_quadratic_prg_quests %>%
@@ -599,9 +611,6 @@ corr_5params_day1_constrained_quadratic_prg_quests <- correlation(
 
 print(corr_5params_day1_constrained_quadratic_prg_quests)
 
-# Add effort rt betas
-effort_betas_day1 <- read.csv('../output/session1/effort/effort_betas_day_1.csv')
-foraging_betas_day1 <- read.csv('../output/session1/foraging/foraging_betas_day_1.csv')
 
 foraging_betas_day1 <- foraging_betas_day1 %>%
   select(subjID, galaxy_type)
@@ -795,7 +804,7 @@ paper_cor_horizontal <- ggplot(holm_df, aes(x = variable, y = factor, fill = rho
 ```{r day1_cor_perf}
 # Check the correlations of the parameters and the factors with the actual performance (i.e., performance bonus paid)
 # Load the data
-bonus_total_individual_day1 <- read.csv(paste0(here(),"/output/session1/bonus_total_individual.csv"))
+bonus_total_individual_day1 <- read.csv("../output/session1/bonus_total_individual.csv")
 
 # Append it to the data_day1_constrained_quadratic_prg_with_factors
 # Merge by subjID
@@ -903,7 +912,6 @@ cor_data_day1_quests_params_filtered_pholm %>%
 ### Correlation of AMI items and parameters
 
 ```{r}
-ami_responses <- read.csv(paste0(here(), "/output/session1/ami_responses.csv"))
 
 # Reversing the scale - now high means apathy same as BA
 ami_responses <- ami_responses %>%
@@ -914,9 +922,15 @@ ami_responses <- ami_responses %>%
   ))
 
 data_day1_params_facs <- data_day1_measures %>%
-  select(foraging_exit_threshold, rlwm_alpha, gng_beta, gng_eps, phys_k,behavioral_activation, factor1_pa, factor2_pa)
+  select(subjID,foraging_exit_threshold, rlwm_alpha, gng_beta, gng_eps, phys_k,behavioral_activation, factor1_pa, factor2_pa)
 
-data_day1_params_facs_ami <- cbind(data_day1_params_facs,ami_responses)
+data_day1_params_facs_ami <- merge(
+  data_day1_params_facs,
+  ami_responses,
+  by = "subjID"
+)
+
+data_day1_params_facs_ami <- data_day1_params_facs_ami %>% select(-subjID)
 
 cor_day1_params_facs_ami <- correlation(
   data_day1_params_facs_ami,
@@ -988,22 +1002,79 @@ loadings_long <- loadings_long %>%
 loadings_long <- loadings_long %>%
   mutate(Factor = recode(Factor, "PA1" = "RL", "PA2" = "Vigor"))
 
-# Plot with fixed scales so y-axis labels appear only once on the left
-ggplot(loadings_long, aes(x = Variable, y = Loading, fill = Factor)) +
+
+# --- 1. DATA PREPARATION ---
+loadings <- as.data.frame(unclass(fa_day1_constrained_quadratic_prg_pa$loadings))
+loadings$Variable <- rownames(loadings)
+
+loadings_long <- pivot_longer(loadings, 
+                              cols = starts_with("PA"), 
+                              names_to = "Factor", 
+                              values_to = "Loading")
+
+# Rename Factors
+loadings_long <- loadings_long %>%
+  mutate(Factor = recode(Factor, "PA1" = "RL", "PA2" = "Vigor"))
+
+# --- 2. FORCE NEW NAMES BY ORDER ---
+unique_vars <- unique(loadings_long$Variable)
+desired_names <- c(
+  "RLWM α", 
+  "GNG β", 
+  "GNG ε", 
+  "Effort κ", 
+  "Foraging Exit Threshold"
+)
+
+force_map <- setNames(desired_names, unique_vars[1:5])
+
+loadings_long <- loadings_long %>%
+  mutate(Variable = recode(Variable, !!!force_map))
+
+# --- 3. FORCE SPECIFIC ORDER (CORRECTED FOR FLIP) ---
+# With coord_flip(), the FIRST item in 'levels' is at the BOTTOM.
+# You want visual order (Top to Bottom): RLWM, GNG β, GNG ε, Foraging, Effort κ.
+# So 'levels' must be (Bottom to Top): Effort κ, Foraging, GNG ε, GNG β, RLWM.
+ordered_levels <- c(
+  "Effort κ", 
+  "Foraging Exit Threshold", 
+  "GNG ε", 
+  "GNG β", 
+  "RLWM α"
+)
+
+loadings_long <- loadings_long %>%
+  mutate(Variable = factor(Variable, levels = ordered_levels))
+
+# --- 4. FACET LABELS ---
+facet_labels <- c(
+  "RL" = "RL\n15% explained variance",
+  "Vigor" = "Vigor\n5% explained variance"
+)
+
+# --- 5. PLOT ---
+p <- ggplot(loadings_long, aes(x = Variable, y = Loading, fill = Factor)) +
   geom_bar(stat = "identity", position = "identity", width = 0.7) +
   geom_hline(yintercept = c(-0.3, 0.3), color = "black", linewidth = 1, linetype = "dashed") +
   coord_flip() +
   scale_fill_brewer(palette = "Set1") +
-  facet_wrap(~ Factor, nrow = 1, scales = "fixed") +
-  labs(title = "",
-       x = "Parameters",
-       y = "Loadings") +
-  theme_minimal() +
+  facet_wrap(~ Factor, nrow = 1, scales = "fixed", labeller = as_labeller(facet_labels)) +
+  labs(title = "", x = "Parameters", y = "Factor loadings") +
+  theme_minimal(base_size = 18) + 
   theme(
-    axis.text.y = element_text(size = 10),
-    axis.title.y = element_text(size = 12),
-    legend.position = "none"
+    text = element_text(size = 18),
+    axis.text.y = element_text(size = 16),
+    axis.title.y = element_text(size = 20),
+    axis.title.x = element_text(size = 18),
+    strip.text = element_text(size = 18, face = "bold"),
+    panel.grid.major = element_line(color = "grey90"),
+    legend.position = "none",
+    panel.spacing.x = unit(2, "cm"),      # space between facets
+    panel.spacing.y = unit(0.5, "cm"),
+    plot.margin = margin(10, 10, 10, 10)
   )
+
+print(p)
 
 ```
 
@@ -1029,7 +1100,7 @@ result <- mvn(data = fa_data_day1_constrained_quadratic_prg, mvn_test = "royston
 ```
 ### Bayesian SEM
 
-```{r}
+```{r,eval=FALSE}
 
 #### Tighter Priors ####
 # 1. Define the Model with Tighter Priors
@@ -2144,23 +2215,21 @@ multi_out_plot_day2 <- ggplot(data_day2_constrained_quadratic_prg, aes(x = 1:nro
 
 
 ```
-# Demographic effects (day 1)
+# Regression analyses (day 1)
 
 
 ```{r}
 # Load the demographic data demographic_df_day1
-demo_data <- read.csv('../output/session0/demographics.csv')
+demo_data <- read.csv('../data/demographics_anonymized.csv')
 
 # Filter only the participants that are also present in the data
 demo_day1 <- demo_data %>%
-  filter(Participant.id %in% data_day1_constrained_quadratic_prg$subjID) %>%
-  rename("subjID" = "Participant.id") %>%
+  filter(subjID %in% data_day1_constrained_quadratic_prg$subjID) %>%
   select(subjID, Age, Sex)
 
 # Get the demo data for day 2 as well
 demo_day2 <- demo_data %>%
-  filter(Participant.id %in% data_day2_constrained_quadratic_prg$subjID) %>%
-  rename("subjID" = "Participant.id") %>%
+  filter(subjID %in% data_day2_constrained_quadratic_prg$subjID) %>%
   select(subjID, Age, Sex)
 
 # Get the df with questionnaires subjID and questionnaires only
@@ -2175,9 +2244,7 @@ day1_prg_quests_and_demo <- merge(
   all.x = TRUE
 )
 
-# Exclude 6712264b956f8f9b305ee14b because of missing data Sex
-day1_prg_quests_and_demo <- day1_prg_quests_and_demo %>%
-  filter(subjID != "6712264b956f8f9b305ee14b")
+
 
 day1_prg_quests_and_demo$Age <- as.numeric(day1_prg_quests_and_demo$Age)
 # Run regression analyses for each questionnaire to see the effects of age and sex on the score,
@@ -2198,6 +2265,10 @@ summary(model_ASRM)
 
 model_ASRM_only_F2 <- lm(Score_ASRM ~ Age + Sex + factor2_pa, day1_prg_quests_and_demo)
 summary(model_ASRM_only_F2)
+
+model_ASRM_interaction <- lm(Score_ASRM ~ Age + Sex + factor1_pa * factor2_pa, day1_prg_quests_and_demo)
+summary(model_ASRM_interaction)
+
 
 model_CESD <- lm(Score_CESD ~ Age + Sex + factor1_pa + factor2_pa, day1_prg_quests_and_demo)
 summary(model_CESD)
@@ -2343,9 +2414,7 @@ foraging_wide_day2  <- reshape_task(foraging_catch_day2,  "foraging")
 catch_tasks_df_day2 <- effort_wide_day2 %>%
   full_join(rlwm_wide_day2, by = "subjID") %>%
   full_join(gng_wide_day2, by = "subjID") %>%
-  full_join(foraging_wide_day2, by = "subjID")
-
-catch_quests_tasks_df_day2 <- merge(
+  full_join(foraging_wide_day2, by = "subjID")catch_quests_tasks_df_day2 <- merge(
   catch_tasks_df_day2,
   quest_catch_day2,
   by = "subjID"

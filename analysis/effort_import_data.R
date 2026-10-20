@@ -20,7 +20,7 @@ if (getwd() != script_dir) {
 
 
 # Session 1 or 2
-day <- 2
+day <- 1
 
 # Set the working directory to the data folder
 setwd(paste0("../data/session", day))
@@ -711,7 +711,7 @@ plot_successes_task <-  ggplot(proportions_true, aes(x = effort_level, y = propo
   ) +
   theme_minimal() +
   theme(
-    legend.position = "bottom",
+    legend.position = "none",
     panel.grid.major = element_line(color = "grey80"),
     panel.grid.minor = element_blank()
   )
@@ -1163,7 +1163,9 @@ plot_required_presses <- ggplot(average_prop_effort_presses, aes(x = factor(requ
     panel.background = element_blank(),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
-    axis.line = element_line(colour = "black")
+    axis.line = element_line(colour = "black"),
+    legend.position = "none"  # This hides the legend
+    
   )
 print(plot_required_presses)
 
@@ -1711,11 +1713,6 @@ trial_df <- function(df, effort_type) {
   this_subj <- filtered_df$subjID[[1]]
   this_subj <- as.character(this_subj)
   print(paste("Processing subject:", this_subj))
-  
-  if (this_subj == 12) {
-    browser()
-  }
-
   
   if (effort_type == 'physical') {
     task_effort <- 'physical effort outcome'

@@ -3,12 +3,14 @@
 clear all;
 
 day=1;
-iters=3;
-model='constrained_quadratic_beta';
+model='unconstrained_linear'; % constrained_quadratic, constrained_linear, unconstrained_linear
 
-load_path = sprintf('day%d/%diter/%s/', day, iters, model);
-load([load_path 'parameters_physicalE_retest.mat']);
+load_path = sprintf('day%d/%s/', day, model);
+model_path = ['../../comp_modelling_session' num2str(day) '/Effort/physical/' model];
+
 addpath(load_path);
+addpath(model_path);
+load("parameters_physicalE.mat")
 
 samples = 1000;
 mp = mu;
@@ -19,7 +21,7 @@ param = stdev.*randn(length(mp),samples)+mp*ones(1,samples);
 for s = 1:samples
     parameters = param(:,s);
 
-    trial_matrix = shuffle_array(1,iters); % 1 = full matrix, num of iters
+    trial_matrix = shuffle_array(1,3); % 1 = full matrix; 3 num of iters (3 used in the manuscript = 3*25=75 trials)
     stake_vector = trial_matrix(:,2)';
     effort_vector = trial_matrix(:,1)';
     n_trials = length(trial_matrix);
@@ -57,4 +59,4 @@ end
 A(A == 0) = 2;
 
 % Save the arrays in a .mat file
-save([load_path '/output_sim/synthdata_physE_pilot2.mat'], 'A', 'R', 'ELevel', 'params');
+save([load_path '/output_sim/synthdata_physE.mat'], 'A', 'R', 'ELevel', 'params');
