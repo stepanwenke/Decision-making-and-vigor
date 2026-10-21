@@ -3,12 +3,10 @@ function generate_synthetic_data_fun(model_path, sim_model, samples, day)
     load([model_path 'parameters_RLWM_retest.mat']);
     
     % Add path to the trial matrix generation file
-    addpath('../recoverability/rlwm');
-    addpath('../recoverability/wmh');
+    addpath(['../../parameter recovery/rlwm']);
+    addpath(['../../parameter recovery/wmh']);
     
-    % Add path to the function that generates synthetic samples
-    %addpath(['../recoverability/effort/day1/3iter/' sim_model]);
-    
+        
     mp = mu;
     stdev = nu;
     param = stdev.*randn(length(mp),samples)+mp*ones(1,samples);

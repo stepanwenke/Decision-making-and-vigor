@@ -15,16 +15,16 @@ clear;
 % each of the folder there are 10 iterations and parameters.mat with the
 % extracted best iteration
 
+%% Settings
+day = '1'; % Choose session 1 or 2
+files_generated = false; % If all files are generated, set this to true to construct confusion matrices without running again
 models = {'k_rho_alpha_ll_wmh', 'original_model_rlwm'};
+
 n_models = length(models);
 samples = 1000;
-day = 1;
-fit_path = ['../../comp_modelling_day' num2str(day) '-prg_exclusions/RLWM/model comparison/'];
-%data = [fit_path 'data_physical_effort_retest.mat']; % Line for generating
-%synthetic data - not necessary if the data are already generated
+fit_path = ['../../comp_modelling_session' day '/RLWM/model comparison/'];
 
 confusion = zeros(n_models, n_models);  % Rows = generating model, Cols = winning model
-files_generated = true;
 addpath(['day' num2str(day)]);
 
 for i = 1:n_models
@@ -33,9 +33,9 @@ for i = 1:n_models
     % load mu and nu of the fit of the current model
     sim_model_path = [fit_path sim_model filesep];
     
-    % if files_generated == false
-    %     generate_synthetic_data_fun(sim_model_path, sim_model, samples,day)
-    % end
+    if files_generated == false
+        generate_synthetic_data_fun(sim_model_path, sim_model, samples,day)
+    end
     
     % 3. Fit each of the two models on those synthetic samples
     % - NxN matrix
@@ -96,52 +96,3 @@ for i = 1:n_models
 end
 
 saveas(gcf, ['day' num2str(day) filesep 'confusion_matrix.jpg']);
-
-% Correlate the parameters of the winning model
-% load(['day' num2str(day) filesep 'constrained_quadratic/fitted_with_synthetic_constrained_quadratic/parameters_physicalE_retest']);
-% 
-% % Ensure column vectors
-% beta = beta(:);
-% k    = k(:);
-% g    = g(:);
-% 
-% figure;
-% 
-% % beta vs k
-% subplot(1,3,1);
-% scatter(beta, k, 'filled'); hold on;
-% pfit = polyfit(beta, k, 1); % Linear fit
-% xvals = linspace(min(beta), max(beta), 100);
-% yfit = polyval(pfit, xvals);
-% plot(xvals, yfit, 'r', 'LineWidth', 2); % Thick red line
-% xlabel('\beta'); ylabel('k');
-% axis square;
-% [r, p] = corr(beta, k);
-% title(sprintf('r = %.2f, p = %.3f', r, p));
-% 
-% % beta vs g
-% subplot(1,3,2);
-% scatter(beta, g, 'filled'); hold on;
-% pfit = polyfit(beta, g, 1);
-% xvals = linspace(min(beta), max(beta), 100);
-% yfit = polyval(pfit, xvals);
-% plot(xvals, yfit, 'r', 'LineWidth', 2);
-% xlabel('\beta'); ylabel('g');
-% axis square;
-% [r, p] = corr(beta, g);
-% title(sprintf('r = %.2f, p = %.3f', r, p));
-% 
-% % beta vs g
-% subplot(1,3,3);
-% scatter(k, g, 'filled'); hold on;
-% pfit = polyfit(k, g, 1);
-% xvals = linspace(min(k), max(k), 100);
-% yfit = polyval(pfit, xvals);
-% plot(xvals, yfit, 'r', 'LineWidth', 2);
-% xlabel('k'); ylabel('g');
-% axis square;
-% [r, p] = corr(k, g);
-% title(sprintf('r = %.2f, p = %.3f', r, p));
-% 
-% sgtitle('Parameter correlations');
-% 

@@ -17,7 +17,7 @@ fixed_beta = 100;
 ff = {'k_rho_alpha_ll_wmh','original_model_rlwm'};
 
 % Add the models to path
-addpath(['../../comp_modelling_day1-prg_exclusions/RLWM/model comparison/'])
+addpath(['../../comp_modelling_session1/RLWM/model comparison/'])
 Np=[5,5];
 
 % -------------------------

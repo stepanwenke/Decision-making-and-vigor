@@ -11,15 +11,17 @@ clear;
 % - a) load mu, nu (
 % 
 
+%% Settings
+files_generated = true; % Set to true in case that you already have all files, just need to create a confusion matrix
+day = '1'; % Session 1 or 2
 models = {'constrained_quadratic', 'unconstrained_linear', 'constrained_linear'};
+%%%%
+
 n_models = length(models);
 samples = 1000;
-day = 1;
-fit_path = ['../comp_modelling_day' num2str(day) '-prg_exclusions/Effort/physical/'];
-%data = [fit_path 'data_physical_effort_retest.mat'];
+fit_path = ['../comp_modelling_session' day '/Effort/physical/'];
 confusion = zeros(n_models, n_models);  % Rows = generating model, Cols = winning model
-files_generated = true;
-addpath(['day' num2str(day)]);
+addpath(['day' day]);
 
 for i = 1:n_models
     sim_model = models{i};
@@ -85,8 +87,8 @@ end
 
 saveas(gcf, ['day' num2str(day) filesep 'confusion_matrix.jpg']);
 
-% Correlate the parameters of the winning model
-load(['day' num2str(day) filesep 'constrained_quadratic/fitted_with_synthetic_constrained_quadratic/parameters_physicalE_retest']);
+% Correlate the parameters of the winning model (constrained quadratic)
+load(['day' day filesep 'constrained_quadratic/fitted_with_synthetic_constrained_quadratic/parameters_physicalE_retest']);
 
 % Ensure column vectors
 beta = beta(:);
