@@ -1,16 +1,17 @@
 clear;
 
-day = 1;
+%% Settings
+day = '1'; % Choose a session 1 or 2
+model = 'll_rlwm'; % Choose a model ll_rlwm or ll_wmh
+%%%%
 
-if day == 1
+load(['output_sim/synthdata_from_real_params_RLWM_' model '_session' day '.mat'])
+load(['output_sim/synthdata_RLWM_' model '_session' day '.mat'])
+
+if day == '1'
     n_participants_real = 162;
-    % Load both datasets
-    load('output/synthdata_from_real_params_RLWM_pilot2.mat') % Load data sampled from real parameters
-    load('output/synthdata_RLWM_pilot2.mat') % Load simulated data
 else
     n_participants_real = 71;
-    load('output/synthdata_from_real_params_RLWM_pilot2day2.mat') % Load data sampled from real parameters
-    load('output/synthdata_RLWM_pilot2day2.mat') % Load simulated data    
 end
 
 S_sim = S; SZ_sim = SZ; R_sim = R;
@@ -55,11 +56,7 @@ legend(legend_labels);
 grid on;
 hold off;
 
-if (day == 1)
-    saveas(gcf, 'output/behaviour_real_sim_day1.png');
-else
-    saveas(gcf, 'output/behaviour_real_sim_day2.png');
-end 
+saveas(gcf, ['output_sim/behaviour_real_sim_' model '_session' day '.png']);
 
 
 % Function to calculate proportions

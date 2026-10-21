@@ -1,14 +1,13 @@
 clear;
 
-day = 2;
+%%% Settings %%%
+day = '1'; % Specify session 1 or 2
+model = 'll_rlwm'; % ll_rlwm or ll_wmh
+%%%%%%%%%%%%%%%5
 
-if day == 1
-    load output/synthdata_RLWM_pilot2.mat;
-else
-    load output/synthdata_RLWM_pilot2day2.mat;
-end
-
-ff{1} = 'k_ll_rlwm'; % alpha and beta
+load(['output/synthdata_RLWM_' model '_session' day '.mat']);
+fixed_beta = 100; 
+ff{1} = model; % alpha and beta
 
 Np=5; % specify the number of parameters for each model (capacity K)
 
@@ -37,7 +36,7 @@ for sj=1:size(A,1)
             init=.1*randn(Np,1); % initialize random sample from normal prob distr
             
             % Find the minimum from ll_rlwm.m (negative log-likelihood of the RLWM model)
-            [est,fval,ex]=fminsearch(@(x) feval(ff{1},x, a, r, s, b, set_size, k, Z,0),init,options);
+            [est,fval,ex]=fminsearch(@(x) feval(ff{1},x, a, r, s, b, set_size, k, Z,0,fixed_beta),init,options);
             
             % store NLL of current iteration
             ll(ite) = fval;
@@ -57,8 +56,4 @@ for sj=1:size(A,1)
   
 end
 
-if day == 1
-    save capacity_pilot2 K LL P;
-else
-    save capacity_retest K LL P;
-end
+save(['capacity_RLWM_' model '_session' day '.mat'], 'K', 'LL', 'P');

@@ -1,10 +1,10 @@
 %% Settings %%
 day = '1'; % Specify session 1 or 2
-model = "ll_rlwm" % Model: ll_rlwm or ll_wmh
+model = 'll_rlwm'; % Model: ll_rlwm or ll_wmh
 %%%%%%%%%%%%%%%%%%%
 
 load(['../../comp_modelling_session' day '/RLWM/capacity_' model '.mat']);
-addpath(['../../comp_modelling_session' day '/RLWM/']);
+est_path = ['../../comp_modelling_session' day '/RLWM/'];
       
 % Calculate counts and percentages
 [counts, edges] = histcounts(K, 1:6);
@@ -25,15 +25,15 @@ indices_5 = find(K == 5);
 % Load parameters of the best iteration
 pl=[];
 for ite=1:10
-    load (['RLWM/240228_EM_-ll_rlwm-ite' num2str(ite)]);
+    load ([est_path model '/240228_EM_-ll_rlwm-ite' num2str(ite)]);
     pl(ite)=sum(PL(1:end)); 
 end
 
 % Find the lowest pl
 [min_value, min_index] = min(pl);
 
-load('data_RLWM_retest.mat');
-load(['RLWM/240228_EM_-ll_rlwm-ite' num2str(min_index) '.mat']) % Get V for calculation of nu
+load([est_path 'data_RLWM.mat']);
+load([est_path model '/240228_EM_-ll_rlwm-ite' num2str(min_index) '.mat']) % Get V for calculation of nu
 
 % Create subsets of E based on the indices of K
 E1 = E(:, indices_1);  % Subset for K == 1

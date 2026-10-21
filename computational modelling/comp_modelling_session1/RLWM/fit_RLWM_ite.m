@@ -192,7 +192,7 @@ for f = 1:size(ff,2)
     end
 
     % save parameters
-    save(fullfile(ff{f}, ['parameters_RLWM_.mat']), ...
+    save(fullfile(ff{f}, ['parameters_RLWM.mat']), ...
     'params', 'mu', 'nu', 'K');
 end
 

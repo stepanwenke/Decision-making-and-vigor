@@ -1,4 +1,4 @@
-function [l,dl] = k_ll_rlwm(x, a, r, s, b, set_size, K, Z,doprior)
+function [l,dl] = ll_rlwm(x, a, r, s, b, set_size, K, Z,doprior)
 
 beta 	  = 100;            % sensitivity to reward 
 alpha 	  = 1./(1+exp(-x(1)));     % learning rate

@@ -9,11 +9,14 @@ clear all
 % 480 trials (2 blocks => each block 240 trials => each stimulus 12 times
 % => set_size * 12)
 
-%addpath 'E:\recoverability\recoverability\rlwm'
 %% simulate rlwm
 
-day = 1;
-target_path = ['../../comp_modelling_day', num2str(day), '-prg_exclusions/RLWM/RLWM/'];
+% Settings
+day = '1'; % Choose a session 1 or 2
+model = 'll_rlwm'; % Choose a model ll_rlwm or ll_wmh
+%%%%%%
+
+target_path = ['../../comp_modelling_session' day '/RLWM/' model filesep];
 
 pl=[];
 for ite=1:10
@@ -24,14 +27,7 @@ end
 % Find the lowest pl
 [min_value, min_index] = min(pl);
 
-if (day == 1)
-    %load([dtset '240228_EM_-ll_rlwm-ite' num2str(min_index) '.mat']) % day 1
-    load('capacity_pilot2.mat');
-    %load('C:\Users\stewe\pavlovia\retest-decision-battery\analysis\modelling_battery\pilot_retest\RLWM\K_distribution_pilot2.mat')
-else
-    %load('240228_EM_-ll_rlwm-ite10_day2.mat') % day 2
-    load('real_capacity_retest.mat');
-end
+load(['capacity_RLWM_' model '_session' day '.mat']);
 
 n_trials = 480;
 
@@ -45,7 +41,7 @@ mp = mu;
 stdev = nu;
 % param = stdev.*randn(length(mp),samples)+mp*ones(1,samples);
 
-if (day == 1)
+if (day == '1')
     iter_num = 20;
 else
     iter_num = 26;
@@ -99,11 +95,5 @@ end
 
 % Save the arrays in a .mat file
 
-if (day == 1)
-    save('output/synthdata_from_real_params_RLWM_pilot2.mat', 'A_real', 'R_real', 'S_real','B_real','SZ_real', 'params');
-else
-    save('output/synthdata_from_real_params_RLWM_pilot2day2.mat', 'A_real', 'R_real', 'S_real','B_real','SZ_real', 'params');
-end
-%save ('output/recovery_output.mat','data', 'mp', 'stdev' , 'param')
-
+save(['output_sim/synthdata_from_real_params_RLWM_' model '_session' day '.mat'], 'A_real', 'R_real', 'S_real','B_real','SZ_real', 'params');
 

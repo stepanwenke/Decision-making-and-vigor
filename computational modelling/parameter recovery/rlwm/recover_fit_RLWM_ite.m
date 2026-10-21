@@ -1,59 +1,32 @@
-%%%%%%%%%%%%%%%%%
-%%% Written by Quentin J. M. Huys, UCL, 2011, modified by Lieke de
-%%% Boer
-%%% References:
-%%% Guitart-Masip M, Quentin JM, Fuentemilla LL, Dayan P, Duzel E, Dolan RJ (2012)
-%%% Go and no-go learning in reward and punishment: Interaction between affect and effect NeuroImage doi:10.1016/j.neuroimage.2012.04.024
-%%% de Boer, L., J Axelsson, R Chowdhury, K Riklund, RJ Dolan, L Nyberg, L
-%%% B�ckman, M Guitart-Masip (2019).Dorsal striatal dopamine D1 receptor availability predicts an
-%%% instrumental bias in action learning. PNAS doi: 10.1073/pnas.1816704116
-
 clear;
-day = 2;
+
+%% Settings 
+day = '1'; % Select session 1 or 2
+model = 'll_rlwm'; % Choose model ll_rlwm or ll_wmh
 
 %% to start parfor
-% c=parcluster;
-% c.NumWorkers=16 ; % 22 is the maxnumber of workers you're allowed
-% parpool(16) ; % same thing
 
 dt = '240228_EM_';
-
-if day == 1
-    dtset = {'output/synthdata_RLWM_pilot2'}; % put in the name of your datafile(s) (more than one is allowed). should contain A, R and S, and
-    % (ideally) a subject list.
-else
-    dtset = {'output/synthdata_RLWM_pilot2day2'}; % put in the name of your datafile(s) (more than one is allowed). should contain A, R and S, and
-end    
+fixed_beta = 10;
+dtset = {['output_sim/synthdata_RLWM_' model '_session' day]}; % put in the name of your datafile(s) (more than one is allowed). should contain A, R and S, and
+output_dir = ['output_fit/day' day filesep model];
 
 for setind = 1:length(dtset)
     
     load(dtset{setind}) %make all rewards scale to 1, 0 and -1
-    
-    if day == 1
-        load capacity_pilot2.mat % load capacity
-    else
-        load capacity_retest.mat % load capacity
-    end
+    load(['capacity_RLWM_' model '_session' day '.mat']) % load capacity
     
     clear LL P
-    %     for i = 1:length(R)
-    %         r=R{i};
-    %         r=r./abs(r);
-    %         r(isnan(r))=0;
-    %         R{i}=r;
-    %     end
+
     dtsetnm = strsplit(dtset{setind}, '_');
-    dtsetnm = dtsetnm{3};
-    if ~exist(dtsetnm, 'file')
-        mkdir(dtsetnm)
-    end
+    dtsetnm = dtsetnm{2};
     
     dosave = 1;
     docomp = 0;
     docheck = 0;
     Nsample = 2000;
     
-    ff{1} = 'll_rlwm'; % alpha and beta - rlwm model
+    ff{1} = model; % alpha and beta - rlwm model
     
     Npar=5; % specify the number of parameters for each model
     
@@ -102,12 +75,12 @@ for setind = 1:length(dtset)
                         init=.1*randn(Np,1);
                         if emit>1; init=E(:,sj); end
                         warning('off','optim:fminunc:SwitchingMethod')
-                        [est,fval,ex]=fminsearch(@(x) feval(ff{whichinf},x, a, r, s, b, set_size, K(sj), Z,1),init,options);
+                        [est,fval,ex]=fminsearch(@(x) feval(ff{whichinf},x, a, r, s, b, set_size, K(sj), Z,1,fixed_beta),init,options);
                         
                         mf=fval;mE=est;mx=ex;
                         for i=1:0
                             [est,fval,nex]=fminsearch(@(x) ...
-                                feval(ff{whichinf},x, a, r, s, b, set_size, K(sj), Z,1),init+.1*randn(Np,1),options);
+                                feval(ff{whichinf},x, a, r, s, b, set_size, K(sj), Z,1,fixed_beta),init+.1*randn(Np,1),options);
                             if (fval < mf)
                                 mf=fval;
                                 mE=est;
@@ -121,13 +94,13 @@ for setind = 1:length(dtset)
                         
                         % 		    if ex<0 ; tmp=tmp+1; fprintf('didn''t converge %i times exit status %i\r',tmp,ex); end
                         
-                        hess=NumHessian(@(x) feval(ff{whichinf},x, a, r, s, b, set_size, K(sj), Z,1),est);
+                        hess=NumHessian(@(x) feval(ff{whichinf},x, a, r, s, b, set_size, K(sj), Z,1,fixed_beta),est);
                         
                         exx(sj)=ex;
                         E(:,sj)=est;			% Subjets' parameter estimate
                         V(:,sj) = max(diag(inv(hess)),1e-5);	% inverse of Hessian = variance
                         PL(sj) = fval;
-                        LL(sj)=feval(ff{whichinf},est, a, r, s, b, set_size, K(sj), Z,0);
+                        LL(sj)=feval(ff{whichinf},est, a, r, s, b, set_size, K(sj), Z,0,fixed_beta);
                         
                         fprintf('Emit=%i subject %i model %i iteration %i exit status=%i\r',emit,sj,whichinf,ite,exx(sj))
                     end
@@ -147,7 +120,7 @@ for setind = 1:length(dtset)
                 lt(emit,:,:) = [LL; PL];
                 
                 if dosave;
-                    eval(['save ' dtsetnm filesep ld ' mu nu E V LL PL par et lt Z exx emit ld ff whichinf;']);
+                    eval(['save ' output_dir filesep ld ' mu nu E V LL PL par et lt Z exx emit ld ff whichinf;']);
                 end
                 % check convergence ...........................................
                 if emit>1;if sum(abs(par(emit,2:end)-par(emit-1,2:end)))<1e-2;fprintf('\n *** converged *** \n');break;end;end
@@ -159,7 +132,7 @@ end
 % quit
 pl=[];
 for ite=1:10
-    load ([dtsetnm filesep dt '-' ff{1} '-ite' num2str(ite)]);
+    load ([output_dir filesep dt '-' ff{1} '-ite' num2str(ite)]);
     pl(ite)=sum(PL(1:end)); 
 end
 
@@ -167,7 +140,7 @@ end
 [min_value, min_index] = min(pl);
 
 % Load parameters
-load([dtsetnm filesep dt '-ll_rlwm-ite' num2str(min_index) '.mat']) % load best iteration (lowest posterior likelihood (pl))
+load([output_dir filesep dt '-ll_rlwm-ite' num2str(min_index) '.mat']) % load best iteration (lowest posterior likelihood (pl))
 
 % Transform parameters
 transformed_E = 1./(1+exp(-E));
@@ -178,11 +151,7 @@ decay = transformed_E(4,:);
 rho   = transformed_E(5,:);
 
 % save parameters
-if day == 1
-    save([dtsetnm filesep 'parameters_RLWM_pilot2.mat'], 'alpha', 'bias', 'decay', 'lapse', 'rho','mu','nu')
-else
-    save([dtsetnm filesep 'parameters_RLWM_retest.mat'], 'alpha', 'bias', 'decay', 'lapse', 'rho','mu','nu')
-end
+save([output_dir filesep 'parameters_RLWM.mat'], 'alpha', 'bias', 'decay', 'lapse', 'rho','mu','nu')
 
 % Make figure
 figure;

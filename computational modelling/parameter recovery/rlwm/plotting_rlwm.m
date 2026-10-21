@@ -1,12 +1,12 @@
 clear;
-day = 1;
 
-if day == 1
-    load('output/synthdata_from_real_params_RLWM_pilot2.mat')
-    load('output/synthdata_RLWM_pilot2.mat')
-else
-    load('synthdata_RLWM_pilot2day2.mat')
-end
+%% Settings
+day = '1'; % Choose a session 1 or 2
+model = 'll_rlwm'; % Choose a model ll_rlwm or ll_wmh
+%%%%
+
+data_path = ['../../comp_modelling_session' day '/RLWM/data_RLWM.mat'];
+load(['output_sim/synthdata_RLWM_' model '_session' day '.mat'])
 
 % Number of participants
 n_participants = size(S, 1);

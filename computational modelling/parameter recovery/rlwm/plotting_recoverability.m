@@ -1,35 +1,29 @@
 clear all
 clc
 
-day = 1;
+%% Settings
+day = '1'; % Specify session 1 or 2
+model = 'll_rlwm'; % Specify model ll_rlwm or ll_wmh
 
 addpath('..');
-if (day == 1)
-    load("output/synthdata_RLWM_pilot2.mat") % Simulated parameters
-    load("pilot2/parameters_RLWM_pilot2.mat") % Observed / fitted params
-else
-    load("output/synthdata_RLWM_pilot2day2.mat") % Simulated parameters
-    load("pilot2day2/parameters_RLWM_retest.mat") % Observed / fitted params
-end 
+load(['output_sim/synthdata_RLWM_' model '_session' day '.mat']) % Simulated parameters
+load(['output_fit/day' day filesep model '/parameters_RLWM.mat']) % Observed / fitted params
 
 % Convert observed params to the param space
 transformed_params = 1./(1+exp(-params));
 alpha_sim = transformed_params(:,1);
 lapse_sim = transformed_params(:,2);
 bias_sim  = transformed_params(:,3);
-%bias_sim  = params(:,3);
 decay_sim = transformed_params(:,4);
 rho_sim   = transformed_params(:,5);
 
-
 % Transform parameters
 % Transpose the vars into cols
-alpha = alpha';
-lapse = lapse';
-bias = bias';
-%bias =  1./(1+exp(-bias));
-decay = decay';
-rho = rho';
+alpha = params(:,1);
+lapse = params(:,2);
+bias = params(:,3);
+decay = params(:,4);
+rho = params(:,5);
 
 
 %% Inspect Data Integrity and Summary Statistics
@@ -148,11 +142,7 @@ for i = 1:size(param_pairs, 1)
     hold off;
 end
 
-if (day == 1)
-    saveas(gcf, 'pilot2/scatter_plots.png');
-else
-    saveas(gcf, 'pilot2day2/scatter_plots.png');
-end 
+saveas(gcf, ['output_fit/day' day filesep model '/scatter_plots.png']);
 
 %% Fitted parameters
 fitted_params = [alpha, lapse, bias, decay, rho];
@@ -186,11 +176,7 @@ end
 
 sgtitle('Scatter plots of fitted parameters');
 
-if (day == 1)
-    saveas(gcf, ['pilot2/scatter_plot_fitted_params.png']);
-else
-    saveas(gcf, ['pilot2day2/scatter_plot_fitted_params.png']);
-end
+saveas(gcf, ['output_fit/day' day filesep model '/scatter_plot_fitted_params.png']);
 
 %% Function to display summary statistics
 function summary_stats(data, name)

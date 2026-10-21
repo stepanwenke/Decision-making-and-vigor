@@ -10,17 +10,13 @@ clear all
 % => set_size * 12)
 
 total_samples = 1000;
-%addpath 'E:\recoverability\recoverability\rlwm'
 %% simulate rlwm
 
-day = 2;
+% Selection session 1 or 2
+day = '1';
+model = 'll_rlwm'; % Choose model ll_rlwm or ll_wmh
 
-if (day == 1)
-    %load('240228_EM_-ll_rlwm-ite10.mat') % day 1
-    load(['../../comp_modelling_day' num2str(day) '-prg_exclusions/RLWM/K_distribution_pilot2.mat'])
-else
-    load(['../../comp_modelling_day' num2str(day) '-prg_exclusions/RLWM/K_distribution_retest.mat'])
-end
+load(['K_distribution_session' day '_' model '.mat'])
 
 n_trials = 480;
 
@@ -77,12 +73,4 @@ for s = 1:samples
 end
 
 % Save the arrays in a .mat file
-
-if (day == 1)
-    save('output/synthdata_RLWM_pilot2.mat', 'A', 'R', 'S','B','SZ', 'params');
-else
-    save('output/synthdata_RLWM_pilot2day2.mat', 'A', 'R', 'S','B','SZ', 'params');
-end
-%save ('output/recovery_output.mat','data', 'mp', 'stdev' , 'param')
-
-
+save(['output_sim/synthdata_RLWM_' model '_session' day '.mat'], 'A', 'R', 'S','B','SZ', 'params');
