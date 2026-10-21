@@ -13,11 +13,11 @@ clear all;
 %% to start parfor
 
 % Specify session 1 or 2
-day = 1;
+day = '1';
 
 
 dt = '240207_EM_';
-dtset = {'output_sim/synthdata_GNG'};
+dtset = {['day' day '/output_sim/synthdata_GNG']};
 
 for setind = 1:length(dtset)
     
@@ -123,7 +123,7 @@ for setind = 1:length(dtset)
                 lt(emit,:,:) = [LL; PL];
                 
                 if dosave;
-                    eval(['save output_fit' filesep ld ' mu nu E V LL PL par et lt Z exx emit ld ff whichinf;']);
+                    eval(['save day' day '/output_fit' filesep ld ' mu nu E V LL PL par et lt Z exx emit ld ff whichinf;']);
                 end
                 % check convergence ...........................................
                 if emit>1;if sum(abs(par(emit,2:end)-par(emit-1,2:end)))<1e-2;fprintf('\n *** converged *** \n');break;end;end
@@ -135,13 +135,13 @@ end
 % quit
 pl=[];
 for ite=1:10 % For each iteration
-    load (['output_fit' filesep dt '-' ff{1} '-ite' num2str(ite)]); % load log-likelihood 
+    load (['day' day '/output_fit' filesep dt '-' ff{1} '-ite' num2str(ite)]); % load log-likelihood 
     pl(ite)=sum(PL(1:end)); % add it to variable pl 
 end
 
 % Load parameters
 [val, ix] = min(pl);
-load([dtsetnm filesep '240207_EM_-ll_zorowitz-ite' num2str(ix) '.mat']) % load best iteration (lowest posterior likelihood (pl) => the min)
+load(['day' day '/output_fit/240207_EM_-ll_zorowitz-ite' num2str(ix) '.mat']) % load best iteration (lowest posterior likelihood (pl) => the min)
 
 % Transform parameters
 beta = exp(E(1,:)); % beta params (row 1:reward, row 2:punishment)
@@ -150,5 +150,5 @@ eps = exp(E(3,:)); % epsilon params (approach/avoid bias; row 1:reward, row 2:pu
 lapse = 1./(1+exp(-E(4,:))); % lapse rate
 % save parameters
 
-save(["output_fit/" filesep 'parameters_GNG_pilot2_synthetic.mat'], 'beta', 'alpha', 'eps', 'lapse','mu','nu')
+save(['day' day '/output_fit/' filesep 'parameters_GNG_synthetic.mat'], 'beta', 'alpha', 'eps', 'lapse','mu','nu')
 

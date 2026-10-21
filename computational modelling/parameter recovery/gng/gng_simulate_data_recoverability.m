@@ -103,4 +103,4 @@ S = S + 1; % Make it from 1 to 4
 
 
 % Save the arrays in a .mat file
-save('output_sim/synthdata_GNG.mat', 'A', 'R', 'S','C','Val', 'params');
+save(['day' day '/output_sim/synthdata_GNG.mat'], 'A', 'R', 'S','C','Val', 'params');
