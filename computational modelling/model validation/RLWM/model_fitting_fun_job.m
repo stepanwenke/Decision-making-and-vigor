@@ -6,7 +6,7 @@ models = {'k_rho_alpha_ll_wmh', 'original_model_rlwm'};
 fit_model = models{fit_model_idx};
 sim_model = models{sim_model_idx};
 
-model_path=['../../comp_modelling_day1-prg_exclusions/RLWM/model comparison/' fit_model filesep];
+model_path=['../../comp_modelling_session1/RLWM/model comparison/' fit_model filesep];
 
 dtset = {['day' num2str(day) filesep sim_model filesep 'synthetic_data']};
 fitted_folder_path = ['day' num2str(day) filesep fit_model '/fitted_on_' sim_model filesep];
@@ -139,33 +139,5 @@ fixed_beta = 10;
     end
 % quit
 
-% pl=[];
-% for ite=1:10
-%     load ([fitted_folder_path ff{1} '-ite' num2str(ite)]);
-%     pl(ite)=sum(PL(1:end));
-% end
-
-% Find the lowest pl
-% [min_value, min_index] = min(pl);
-
-% Construct the filename based on the index
-% filename = [fitted_folder_path ff{1} '-ite' num2str(min_index) '.mat'];
-
-% Load the file
-% load(filename);
-
-
-% Extract beta and k parameters from 'E'
-% Transform parameters
-% transformed_E = 1./(1+exp(-E));
-% alpha = transformed_E(1,:);
-% lapse = transformed_E(2,:);
-% bias  = transformed_E(3,:);
-% decay = transformed_E(4,:);
-% rho   = transformed_E(5,:);
-% 
-% 
-% % Save beta and k parameters to a .mat file
-% save([fitted_folder_path '/parameters_RLWM_pilot2.mat'], 'alpha', 'lapse', 'bias','decay','rho','mu','nu','BIC');
 
 end

@@ -17,7 +17,7 @@ clear;
 
 %% Settings
 day = '1'; % Choose session 1 or 2
-files_generated = false; % If all files are generated, set this to true to construct confusion matrices without running again
+files_generated = true;
 models = {'k_rho_alpha_ll_wmh', 'original_model_rlwm'};
 
 n_models = length(models);
@@ -33,10 +33,7 @@ for i = 1:n_models
     % load mu and nu of the fit of the current model
     sim_model_path = [fit_path sim_model filesep];
     
-    if files_generated == false
-        generate_synthetic_data_fun(sim_model_path, sim_model, samples,day)
-    end
-    
+
     % 3. Fit each of the two models on those synthetic samples
     % - NxN matrix
     % 

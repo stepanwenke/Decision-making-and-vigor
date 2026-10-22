@@ -8,7 +8,7 @@ model='unconstrained_linear';
 
 real_suffix='';
 target_path = ['day' day filesep model];
-data_path = ['../../comp_modelling_session' day '/Effort/physical/data_physical_effort.mat'];
+    data_path = ['../../comp_modelling_session' day '/Effort/physical/data_physical_effort.mat'];
 
 if real==false
     load([target_path '/output_sim/synthdata_physE.mat']) % Simulated parameters     
