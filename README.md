@@ -16,9 +16,10 @@ We have adapted three existing task to our needs (detailed description of the mo
 - /data: Empty folder. Follow the instructions in README.md inside the folder to download the data.
 - /computational modelling: Includes all scripts related to computational modelling, parameter recovery and model comparisons:
     - Input files to these analyses are located in *data/sessionX/comp_modelling/task*
-    - Output files are *analysis/comp_modelling/*
+    - Output files are *data/comp_modelling/*
 - /analysis: Contains analysis scripts for each task
-    *main_analysis.Rmd* is the main analysis file yielding main tables, figures and analyses used in the manuscript.
+    *main_analysis.Rmd* is the main analysis file that generatestables, figures and analyses used in the manuscript (but also
+    other analyses that we made).
 
     To obtain behavioral results from each task (such as performance metrics) one has to run a script for the specific task. At the top of the script a session (0, 1 or 2) is given by variable *day* (e.g., *day <- 1*)
 - /output: Contains figures and other generated outputs by scripts in /analysis for each respective session
