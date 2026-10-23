@@ -26,9 +26,6 @@ for setind = 1:length(dtset)
         clear LL P
 
         dtsetnm = ff{whichinf};
-        if ~exist(dtsetnm, 'dir')
-            mkdir(dtsetnm)
-        end
         
         dosave = 1;
         docomp = 0;
