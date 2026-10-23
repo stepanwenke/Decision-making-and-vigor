@@ -2,7 +2,10 @@ clear;
 
 load data_RLWM.mat
 
-ff = {'ll_wmh'};
+%% Settings
+ff = {'ll_rlwm'}; % Select model 'll_rlwm' or 'll_wmh'
+%%%
+
 fixed_beta = 100; % Fixed beta at 100 when estimating WM capacity K
 
 Np=[5]; % specify the number of parameters for each model (capacity K)

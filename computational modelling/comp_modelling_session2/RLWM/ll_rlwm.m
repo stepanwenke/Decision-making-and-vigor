@@ -1,6 +1,6 @@
-function [l,dl] = ll_rlwm(x, a, r, s, b, set_size, K, Z,doprior)
+function [l,dl] = ll_rlwm(x, a, r, s, b, set_size, K, Z,doprior,fixed_beta)
 
-beta 	  = 10;            % sensitivity to reward 
+beta 	  = fixed_beta;            % sensitivity to reward 
 alpha 	  = 1./(1+exp(-x(1)));     % learning rate
 g         = 1./(1+exp(-x(2)));     % lapse rate
 bias      = 1./(1+exp(-x(3)));    % positive learning bias

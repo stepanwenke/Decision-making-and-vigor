@@ -1,5 +1,7 @@
-%% Script number 1
-% imports the matrices from 02_rlwm_all_participants.R
+addpath("../../../data/session2/comp_modelling/rlwm")
+
+
+% imports the matrices from rlwm_import_data.R
 % Creates A, R, S, B, SetSize which will be fed as input to the computaitonal
 % modelling
 
@@ -12,5 +14,5 @@ B       = readmatrix('rlwm_block_index_matrix.csv');
 SetSize = readmatrix('rlwm_setsize_matrix.csv');
 
 % save into .mat file
-save('data_RLWM_retest.mat', 'A', 'B', 'R', 'S', 'SetSize')
+save('data_RLWM.mat', 'A', 'B', 'R', 'S', 'SetSize')
 

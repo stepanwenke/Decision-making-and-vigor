@@ -2,14 +2,14 @@ clear;
 
 %% to start parfor
 
+% Which model do you want to fit - ll_rlwm is the original one.
+ff = {'ll_wmh'};
+
 dt = '240228_EM_';
 fixed_beta = 10; % Beta parameter fixed at 10 when fitting
 
 dtset = {'data_RLWM'}; % put in the name of your datafile(s) (more than one is allowed). should contain A, R and S, and
 % (ideally) a subject list.
-
-% Which model do you want to fit - ll_rlwm is the original one.
-ff = {'ll_wmh'};
 
 
 for setind = 1:length(dtset)

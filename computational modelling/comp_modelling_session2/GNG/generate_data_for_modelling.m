@@ -1,4 +1,6 @@
-%% Script number 1
+
+addpath("../../../data/session2/comp_modelling/gng")
+
 % imports the matrices from 03_gonogo_all_participants.R
 % Creates A, R, S, Val, which will be fed as input to the computaitonal
 % modelling
@@ -22,5 +24,5 @@ Val = C;
 S = readmatrix('gonogo_stimulus_matrix.csv');
 
 % save into .mat file
-save('data_GNG_retest.mat', 'A', 'R', 'S', 'Val')
+save('data_GNG.mat', 'A', 'R', 'S', 'Val')
 
