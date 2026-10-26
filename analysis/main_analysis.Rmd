@@ -1072,7 +1072,11 @@ result <- mvn(data = fa_data_day1_constrained_quadratic_prg, mvn_test = "royston
 ```
 ### Bayesian SEM
 
+Exploratory analysis to see whether we are able to fit SEM on our data when specifying priors based on our pilot study.
+
 ```{r,eval=FALSE}
+
+
 
 #### Tighter Priors ####
 # 1. Define the Model with Tighter Priors
@@ -1218,9 +1222,6 @@ fitm_fitfinal <- fitmeasures(fit_final_nopriors)
 # Day 2
 
 ```{r day2}
-# Full data no exclusions
-# full_quests <- cbind(data_day2_quests, unconstrained_linear_day2)
-
 data_day2_constrained_quadratic_full <- data_day2
 data_day2_constrained_quadratic_full_quests <- data_day2_quests
 
@@ -1604,10 +1605,8 @@ rows_with_outliers <- data_day1_constrained_quadratic_prg_normalized %>%
 z_scores_out <- rows_with_outliers$subjID
 
 # Custom outlier filtration
-custom_outliers <- c("5df8d8d6b7b3306449876d43", "60e45a7bc4730383ee2fecb6","6140ef8d27499e70e8740918","60d9dfd4dcc09cf57dc92cb1","6643be675817fd2a43298a04")
-#custom_outliers <- c()
+custom_outliers <- c("")
 
-# Excluding 60e45a7bc4730383ee2fecb6 removes gng_eps loading from f2, otherwise no single exclusion leads to a complete destruction of the FA structure
 
 # Get the df without those outliers
 data_day1_constrained_quadratic_prg_normalized_no_outliers <- data_day1_constrained_quadratic_prg_normalized %>%
@@ -1741,18 +1740,6 @@ print(loadings(fa_day1_constrained_quadratic_prg_normalized_no_outliers_IQR), cu
 
 IQR_no_out_efa_pa <- fa(data_day1_constrained_quadratic_prg_normalized_no_outliers_IQR[,-1], nfactors=2, rotate="varimax",fm="pa")
 IQR_no_out_efa_pa$loadings
-
-# # Try the factor analysis with the outliers
-# fa_day1_constrained_quadratic_prg_with_uni_outliers <- factanal(
-#   data_day1_constrained_quadratic_prg_normalized[,-1],
-#   factors = 2,
-#   rotation = "varimax",
-#   scores = "regression"
-# )
-# 
-# print(fa_day1_constrained_quadratic_prg_with_uni_outliers)
-
-
 
 
 # Correlation matrix when excluding outliers
@@ -2057,12 +2044,7 @@ multi_out_plot_day1 <- ggplot(df_plot, aes(x = "Participant", y = mahal_dist)) +
   geom_boxplot(outlier.shape = NA, fill = "lightgray", color = "black") +
   geom_jitter(aes(color = outlier), width = 0.15, size = 2) +
   geom_hline(yintercept = cutoff, color = "red", linetype = "dashed") +
-  # geom_text(
-  #   data = subset(df_plot, outlier),
-  #   aes(label = subjID),
-  #   color = "red", vjust = -0.5, size = 3,
-  #   position = position_jitter(width=0.3,height = 0.5)
-  # ) +
+
   scale_color_manual(values = c("black", "red")) +
   theme_bw() +
   labs(
@@ -2138,8 +2120,6 @@ rows_with_outliers <- data_day2_constrained_quadratic_prg_normalized %>%
 
 # Custom outlier filtration
 #custom_outliers <- c()
-
-# Excluding 60e45a7bc4730383ee2fecb6 removes gng_eps loading from f2, otherwise no single exclusion leads to a complete destruction of the FA structure
 
 # Get the df without those outliers
 data_day2_constrained_quadratic_prg_normalized_no_outliers <- data_day2_constrained_quadratic_prg_normalized %>%
