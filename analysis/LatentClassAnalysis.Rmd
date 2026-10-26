@@ -1,0 +1,712 @@
+---
+title: "LatentClassAnalysis"
+author: "Alessandro Ferrante"
+date: "2025-11-24"
+output:
+  pdf_document: default
+  html_document: default
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+# Library
+
+```{r, echo=FALSE}
+pkgs <- c("tidySEM", "ggplot2", "dplyr", "readr", "OpenMx", "knitr",
+          "rempsyc", "papaja", "tidyr")
+
+for (p in pkgs) {
+  if (!require(p, character.only = TRUE)) {
+    install.packages(p, repos = "https://cloud.r-project.org")
+    library(p, character.only = TRUE)
+  }
+}
+
+
+```
+
+
+# Load data
+
+```{r}
+df_1_without_id <- read.csv("../data/comp_modelling/session1_comp_params_anonymized.csv")
+
+# Z score normalization
+df_1_without_id_z   <-  as.data.frame(scale(df_1_without_id))
+
+data_lca_z<- df_1_without_id_z%>% select ( rlwm_alpha, gng_beta, gng_eps, foraging_exit_threshold, phys_k )
+
+data_lca_z <- data_lca_z %>%
+  rename(k = phys_k)
+
+
+
+
+```
+
+
+
+
+#Descriptions
+```{r}
+desc<- descriptives(data_lca_z)
+
+desc <- desc[, c("name", "type", "n", "unique", "mean", "median",
+"sd", "min", "max", "skew_2se", "kurt_2se")]
+```
+
+
+
+#LCA 1:6
+```{r}
+# Uncomment the snippet below if you want to re-estimate the LPA de novo. Note that the profiles may be mixed up due to class switching.
+
+# lca_16_c_z <- tidySEM::mx_profiles(
+#     variances = c("equal","varying"),
+#     covariances = c("zero", "equal", "varying"),
+#     expand_grid = TRUE,
+#     data = data_lca_z,
+#     classes = 1:6,
+#     run=TRUE
+# )
+# 
+# save(lca_16_c_z, file = "lca_16_c_z.RData")
+
+# Load the data estimated for the manuscript, one can re-estimate it again but the profiles may not end up in the same order due to the problem of label-switching
+load("helpers/lca_16_c_z.RData")
+
+bic_plot<-plot(lca_16_c_z)
+
+print(bic_plot)
+
+```
+
+# Find best model
+```{r}
+#Fitting
+fit_lca_z <- tidySEM::table_fit(lca_16_c_z)
+
+
+
+#exluding models with sample <10%
+fit_n_min01_z<-  fit_lca_z[ !(fit_lca_z$n_min < 0.1), ] 
+
+
+#plotting fit
+best_BIC_plot_z<- plot(fit_n_min01_z) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, 
+hjust = 1))   
+
+
+#best model is 	free var 3, free var 4, free var, equal cov 3, 	free var, equal cov 4 all with WARNING
+final_lca_model_z<- lca_16_c_z[["free var 3"]]
+
+summary(final_lca_model_z)
+print(final_lca_model_z)
+
+# Testing the stability of the model with random starting point 
+lca_try <- mxTryHard(
+  final_lca_model_z,
+  extraTries = 50,
+  finetuneGradient = TRUE
+)
+
+
+summary(lca_try)
+
+ll_final <- logLik(final_lca_model_z)
+
+ll_try<- logLik(lca_try)  
+
+#SAME LL: THE MODEL FIT IS STABLE
+
+```
+
+# FINAL MODEL
+```{r}
+
+# The best model
+final_lca_model_z<- lca_16_c_z[["free var 3"]]
+
+print(final_lca_model_z)
+
+#Exploring warning
+summary(lca_16_c_z[["free var 3"]])   # The 3-class free-variance model shows convergence problems.
+                                    # OpenMx returned a RED status, indicating that the model did not satisfy
+                                    # first-order optimality conditions and the optimizer could not improve
+                                    # the solution during the final line search.
+                                    # Parameter estimates may therefore be unreliable or unstable.
+
+
+
+#Results
+results_z<-table_results(final_lca_model_z) #  *** -> p < 0.001; ** -> p < 0.01 ; * -> p < 0.05
+
+class_prob_z<- class_prob(final_lca_model_z)
+
+
+class_comp <- data.frame(
+  Label = results_z$label,
+  Estimate = results_z$est_sig,
+  ConfInt = results_z$confint,
+  Class = results_z$class
+  
+)
+
+class_comp<- class_comp [grep("Means",class_comp$Label), ]
+
+results_z$pval
+```
+
+# Plotting results
+```{r}
+#plotting results
+
+
+plot_bivariate_z<- plot_bivariate(final_lca_model_z)
+print(plot_bivariate_z)
+
+
+
+profiles_4c_z <- tidySEM::plot_profiles(final_lca_model_z)
+str(profiles_4c_z$data)
+jpeg("prfiles_4c_z.jpg")
+# disallinea tutti i layer
+for(i in 1:length(profiles_4c_z$layers)){
+
+  if("GeomPoint" %in% class(profiles_4c_z$layers[[i]]$geom)){
+
+    profiles_4c_z$layers[[i]]$position <- position_jitterdodge(
+      dodge.width = 0.8,
+      jitter.width = 0.05
+    )
+
+  } else {
+
+    profiles_4c_z$layers[[i]]$position <- position_dodge(width = 0.8)
+
+  }
+}
+
+plot_label <- c("Profile 1: Low RL / High vigor", "Profile 2: Low RL / low vigor", "Profile 3: High RL / normal vigor")
+p <- profiles_4c_z +
+
+
+  labs(
+    x = "Parameter",
+    y = "Z-Score",
+    color = "Profile",
+    # fill = "Profile",
+    shape = "Profile",
+    linetype = "Profile"
+  ) +
+
+  scale_color_discrete(
+    labels = plot_label
+  ) +
+
+  scale_fill_discrete(
+    labels = plot_label
+  ) +
+
+  scale_shape_discrete(
+    labels = plot_label
+  ) +
+
+  scale_linetype_discrete(
+    labels = plot_label
+  ) +
+
+  theme_classic(base_size = 14) +
+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(p)
+
+
+
+density_4c_z<-tidySEM::plot_density(final_lca_model_z)
+print(density_4c_z)
+
+jpeg("density_4c_z.jpg")
+
+## Adjustments for the manuscript
+p <- profiles_4c_z +
+      geom_hline(yintercept = 0, linetype = "dashed", color = "gray50", linewidth = 0.8) +
+  scale_x_discrete(
+    limits = c("rlwm_alpha", "GNG Beta", "GNG Epsilon", "Foraging Exit Threshold", "Effort K"),
+    labels = c("RLWM α", "GNG β", "GNG ε", "Foraging Exit Threshold", "Effort κ")
+  ) +
+  labs(x = "Parameter", y = "Z-Score", color = "Profile", shape = "Profile", linetype = "Profile") +
+  scale_color_discrete(labels = plot_label) +
+  scale_fill_discrete(labels = plot_label) +
+  scale_shape_discrete(labels = plot_label) +
+  scale_linetype_discrete(labels = plot_label) +
+
+  theme_classic(base_size = 14) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Save the figure used for the manuscript
+ggsave("../output/session1/profiles_parameters.jpg", plot = p, width = 10, height = 6, dpi = 300)
+
+```
+
+# Diagnosis 
+
+```{r}
+post_class_prob<- class_prob(final_lca_model_z, type="individual")#each individual has a high posterior class probability for one class
+
+est_freq <- class_prob(final_lca_model_z, type ="sum.posterior")#the estimated frequency table of the latent categorical variable. This table takes classification error into account, so individuals can contribute partially to multiple classes.
+
+freq_table<- class_prob(final_lca_model_z, type ="sum.mostlikely")  #the frequency table of the variable M, FM, is obtained by running class_prob(res,” sum.mostlikely”). Unlike FP, FM ignores classification error.
+
+avg_post_prob<- class_prob(final_lca_model_z, type ="avg.mostlikely") #the average posterior probabilities by most likely class membership. This table gives the column means of P for the k subsets of observations with most likely class of M¼1...k:Each row gives the mean probability of being assigned to each class for participants assigned to one particular class according to M. (>0.6)
+
+
+
+```
+
+
+#BCH Analyses Mania
+```{r}
+
+bch_model_z <- tidySEM::BCH(
+    x = final_lca_model_z,
+    model = "Score_ASRM ~ 1",
+    data = df_1_without_id_z
+)
+
+
+sum_bch_z<- summary(bch_model_z)   #M=mean; S=Variance
+
+#LRT
+
+
+#NON Restricted model 
+
+
+
+bch_nrest_fit_z <- OpenMx::mxRun(bch_model_z)
+
+
+
+#LRT 1-2
+
+
+vin_c1_c2_z <- OpenMx::mxConstraint(
+  class1.M[1,1] == class2.M[1,1],
+  name = "vin_c1_c2_z"
+)
+
+bch_rest_c1_c2 <- OpenMx::mxModel(bch_model_z, vin_c1_c2_z)
+
+bch_rest_fit_c1_c2 <- mxRun(bch_rest_c1_c2)
+
+LRT_c1_c2 <- mxCompare(bch_nrest_fit_z, bch_rest_fit_c1_c2)   #SIGNIFICANT 
+
+
+
+
+
+#LRT 1-3
+
+vin_c1_c3_z <- OpenMx::mxConstraint(
+  class1.M[1,1] == class3.M[1,1],
+  name = "vin_c1_c3_z"
+)
+
+bch_rest_c1_c3 <- OpenMx::mxModel(bch_model_z, vin_c1_c3_z)
+bch_rest_fit_c1_c3 <- mxRun(bch_rest_c1_c3)
+
+LRT_c1_c3 <- mxCompare(bch_nrest_fit_z, bch_rest_fit_c1_c3)  # SIGNIFICANT 
+
+
+
+
+
+
+#LRT  2-3
+
+vin_c2_c3_z <- OpenMx::mxConstraint(
+  class2.M[1,1] == class3.M[1,1],
+  name = "vin_c2_c3_z"
+)
+
+bch_rest_c2_c3 <- OpenMx::mxModel(bch_model_z, vin_c2_c3_z)
+bch_rest_fit_c2_c3 <- mxRun(bch_rest_c2_c3)
+
+LRT_c2_c3 <- mxCompare(bch_nrest_fit_z, bch_rest_fit_c2_c3)  #SIGNIFICANT 
+
+
+
+
+
+
+```
+
+
+
+
+#BCH Analyses Depression
+```{r}
+
+bch_model_z_dep <- tidySEM::BCH(
+    x = final_lca_model_z,
+    model = "Score_CESD ~ 1",
+    data = df_1_without_id_z
+)
+
+
+dep_bch_z<- summary(bch_model_z_dep)   #M=mean; S=Variance
+
+#NON Restricted model 
+
+
+
+bch_nrest_fit_z_dep <- OpenMx::mxRun(bch_model_z_dep)
+
+
+
+
+#LRT 1-2
+
+
+vin_dep_c1_c2_z <- OpenMx::mxConstraint(
+  class1.M[1,1] == class2.M[1,1],
+  name = "vincolo_c1_c2_z"
+)
+
+bch_rest_c1_c2_dep <- OpenMx::mxModel(bch_model_z_dep, vin_dep_c1_c2_z)
+
+bch_rest_fit_c1_c2_dep <- mxRun(bch_rest_c1_c2_dep)
+
+LRT_c1_c2_dep <- mxCompare(bch_nrest_fit_z_dep, bch_rest_fit_c1_c2_dep)   #NON SIGNIFICANT 
+
+
+
+
+
+#LRT 1-3
+
+vin_dep_c1_c3_z <- OpenMx::mxConstraint(
+  class1.M[1,1] == class3.M[1,1],
+  name = "vin_dep_c1_c3_z"
+)
+
+bch_rest_c1_c3_dep <- OpenMx::mxModel(bch_model_z_dep, vin_dep_c1_c3_z)
+bch_rest_fit_c1_c3_dep <- mxRun(bch_rest_c1_c3_dep)
+
+LRT_c1_c3_dep <- mxCompare(bch_nrest_fit_z_dep, bch_rest_fit_c1_c3_dep)  #NON SIGNIFICANT 
+
+#LRT  2-3
+
+vin_dep_c2_c3_z <- OpenMx::mxConstraint(
+  class2.M[1,1] == class3.M[1,1],
+  name = "vin_dep_c2_c3_z"
+)
+
+bch_rest_c2_c3_dep <- OpenMx::mxModel(bch_model_z_dep, vin_dep_c2_c3_z)
+bch_rest_fit_c2_c3_dep <- mxRun(bch_rest_c2_c3_dep)
+
+LRT_c2_c3_dep <- mxCompare(bch_nrest_fit_z_dep, bch_rest_fit_c2_c3_dep)  #NON SIGNIFICANT 
+
+
+
+
+
+```
+
+
+#BCH Analyses behavioral_activation
+```{r}
+
+bch_model_z_BA <- tidySEM::BCH(
+    x = final_lca_model_z,
+    model = "behavioral_activation ~ 1",
+    data = df_1_without_id_z
+)
+
+
+BA_bch_z <- summary(bch_model_z_BA)   #M=mean; S=Variance
+
+#LRT
+#NON Restricted model 
+
+bch_nrest_fit_z_BA <- OpenMx::mxRun(bch_model_z_BA)
+
+#LRT 1-2
+
+
+vin_BA_c1_c2_z <- OpenMx::mxConstraint(
+  class1.M[1,1] == class2.M[1,1],
+  name = "vin_BA_c1_c2_z"
+)
+
+bch_rest_c1_c2_BA <- OpenMx::mxModel(bch_model_z_BA, vin_BA_c1_c2_z)
+
+bch_rest_fit_c1_c2_BA <- mxRun(bch_rest_c1_c2_BA)
+
+LRT_c1_c2_BA <- mxCompare(bch_nrest_fit_z_BA, bch_rest_fit_c1_c2_BA)  #NON SIGNIFICANT 
+
+
+#LRT 1-3
+
+vincolo_c1_c3_z_BA <- OpenMx::mxConstraint(
+  class1.M[1,1] == class3.M[1,1],
+  name = "vin_BA_c1_c3_z"
+)
+
+bch_rest_c1_c3_BA <- OpenMx::mxModel(bch_model_z_BA, vincolo_c1_c3_z_BA)
+bch_rest_fit_c1_c3_BA <- mxRun(bch_rest_c1_c3_BA)
+
+LRT_c1_c3_BA <- mxCompare(bch_nrest_fit_z_BA, bch_rest_fit_c1_c3_BA)  # SIGNIFICANT 
+
+
+
+
+
+
+#LRT  2-3
+
+vincolo_c2_c3_z_BA <- OpenMx::mxConstraint(
+  class2.M[1,1] == class3.M[1,1],
+  name = "vin_BA_c2_c3_z"
+)
+
+bch_rest_c2_c3_BA <- OpenMx::mxModel(bch_model_z_BA, vincolo_c2_c3_z_BA)
+bch_rest_fit_c2_c3_BA <- mxRun(bch_rest_c2_c3_BA)
+
+LRT_c2_c3_BA <- mxCompare(bch_nrest_fit_z_BA, bch_rest_fit_c2_c3_BA)  # SIGNIFICANT 
+
+
+
+
+
+```
+
+
+
+#BCH Analyses emotional_sensitivity
+```{r}
+
+bch_model_z_es <- tidySEM::BCH(
+    x = final_lca_model_z,
+    model = "emotional_sensitivity ~ 1",
+    data = df_1_without_id_z
+)
+
+
+es_bch_z<- summary(bch_model_z_es)   #M=mean; S=Variance
+
+#LRT
+
+#NON Restricted model 
+
+
+
+bch_nrest_fit_z_es <- OpenMx::mxRun(bch_model_z_es)
+
+
+
+
+#LRT 1-2
+
+
+vin_es_c1_c2_z <- OpenMx::mxConstraint(
+  class1.M[1,1] == class2.M[1,1],
+  name = "vin_es_c1_c2_z"
+)
+
+bch_rest_c1_c2_es <- OpenMx::mxModel(bch_model_z_es, vin_es_c1_c2_z)
+
+bch_rest_fit_c1_c2_es <- mxRun(bch_rest_c1_c2_es)
+
+LRT_c1_c2_es <- mxCompare(bch_nrest_fit_z_es, bch_rest_fit_c1_c2_es)  #  NON SIGNIFICANT 
+
+
+
+
+
+#LRT 1-3
+
+vincolo_c1_c3_z_es <- OpenMx::mxConstraint(
+  class1.M[1,1] == class3.M[1,1],
+  name = "vin_es_c1_c3_z"
+)
+
+bch_rest_c1_c3_es <- OpenMx::mxModel(bch_model_z_es, vincolo_c1_c3_z_es)
+bch_rest_fit_c1_c3_es <- mxRun(bch_rest_c1_c3_es)
+
+LRT_c1_c3_es <- mxCompare(bch_nrest_fit_z_es, bch_rest_fit_c1_c3_es)  #  NON SIGNIFICANT 
+
+
+
+
+
+
+#LRT  2-3
+
+vincolo_c2_c3_z_es <- OpenMx::mxConstraint(
+  class2.M[1,1] == class3.M[1,1],
+  name = "vin_es_c2_c3_z"
+)
+
+bch_rest_c2_c3_es <- OpenMx::mxModel(bch_model_z_es, vincolo_c2_c3_z_es)
+bch_rest_fit_c2_c3_es <- mxRun(bch_rest_c2_c3_es)
+
+LRT_c2_c3_es <- mxCompare(bch_nrest_fit_z_es, bch_rest_fit_c2_c3_es)  #  NON SIGNIFICANT 
+
+
+
+```
+
+
+#BCH Analyses social_motivation
+```{r}
+
+bch_model_z_sm <- tidySEM::BCH(
+    x = final_lca_model_z,
+    model = "social_motivation ~ 1",
+    data = df_1_without_id_z
+)
+
+
+sm_bch_z<- summary(bch_model_z_sm)   #M=mean; S=Variance
+
+
+#NON Restricted model 
+
+bch_nrest_fit_z_sm <- OpenMx::mxRun(bch_model_z_sm)
+
+#LRT 1-2
+
+
+vin_sm_c1_c2_z <- OpenMx::mxConstraint(
+  class1.M[1,1] == class2.M[1,1],
+  name = "vin_sm_c1_c2_z"
+)
+
+bch_rest_c1_c2_sm <- OpenMx::mxModel(bch_model_z_sm, vin_sm_c1_c2_z)
+
+bch_rest_fit_c1_c2_sm <- mxRun(bch_rest_c1_c2_sm)
+
+LRT_c1_c2_sm <- mxCompare(bch_nrest_fit_z_sm, bch_rest_fit_c1_c2_sm)  #  NON SIGNIFICANT 
+
+
+
+
+
+#LRT 1-3
+
+vincolo_c1_c3_z_sm <- OpenMx::mxConstraint(
+  class1.M[1,1] == class3.M[1,1],
+  name = "vin_sm_c1_c3_z"
+)
+
+bch_rest_c1_c3_sm <- OpenMx::mxModel(bch_model_z_sm, vincolo_c1_c3_z_sm)
+bch_rest_fit_c1_c3_sm <- mxRun(bch_rest_c1_c3_sm)
+
+LRT_c1_c3_sm <- mxCompare(bch_nrest_fit_z_sm, bch_rest_fit_c1_c3_sm) # SIGNIFICANT 
+
+
+
+   
+
+
+#LRT  2-3
+
+vincolo_c2_c3_z_sm <- OpenMx::mxConstraint(
+  class2.M[1,1] == class3.M[1,1],
+  name = "vin_sm_c2_c3_z"
+)
+
+bch_rest_c2_c3_sm <- OpenMx::mxModel(bch_model_z_sm, vincolo_c2_c3_z_sm)
+bch_rest_fit_c2_c3_sm <- mxRun(bch_rest_c2_c3_sm)
+
+LRT_c2_c3_sm <- mxCompare(bch_nrest_fit_z_sm, bch_rest_fit_c2_c3_sm)  # ALMOST SIGNIFICANT 
+
+
+
+```
+
+
+
+
+#BCH Analyses Score_SHPS
+```{r}
+
+bch_model_z_SHPS <- tidySEM::BCH(
+    x = final_lca_model_z,
+    model = "Score_SHPS ~ 1",
+    data = df_1_without_id_z
+)
+
+
+SHPS_bch_z<- summary(bch_model_z_SHPS)   #M=mean; S=Variance
+
+#LRT
+
+
+
+
+#NON Restricted model 
+
+
+
+bch_nrest_fit_z_SHPS <- OpenMx::mxRun(bch_model_z_SHPS)
+
+
+
+
+#LRT 1-2
+
+
+vin_SHPS_c1_c2_z <- OpenMx::mxConstraint(
+  class1.M[1,1] == class2.M[1,1],
+  name = "vin_SHPS_c1_c2_z"
+)
+
+bch_rest_c1_c2_SHPS <- OpenMx::mxModel(bch_model_z_SHPS, vin_SHPS_c1_c2_z)
+
+bch_rest_fit_c1_c2_SHPS <- mxRun(bch_rest_c1_c2_SHPS)
+   
+LRT_c1_c2_SHPS<- mxCompare(bch_nrest_fit_z_SHPS, bch_rest_fit_c1_c2_SHPS)  #  NON SIGNIFICANT 
+
+
+
+
+
+#LRT 1-3
+
+vincolo_c1_c3_z_SHPS <- OpenMx::mxConstraint(
+  class1.M[1,1] == class3.M[1,1],
+  name = "vin_SHPS_c1_c3_z"
+)
+
+bch_rest_c1_c3_SHPS <- OpenMx::mxModel(bch_model_z_SHPS, vincolo_c1_c3_z_SHPS)
+bch_rest_fit_c1_c3_SHPS <- mxRun(bch_rest_c1_c3_SHPS)
+
+LRT_c1_c3_SHPS <- mxCompare(bch_nrest_fit_z_SHPS, bch_rest_fit_c1_c3_SHPS)  #  NON SIGNIFICANT 
+
+
+
+#LRT  2-3
+
+vincolo_c2_c3_z_SHPS <- OpenMx::mxConstraint(
+  class2.M[1,1] == class3.M[1,1],
+  name = "vin_SHPS_c2_c3_z"
+)
+
+bch_rest_c2_c3_SHPS <- OpenMx::mxModel(bch_model_z_SHPS, vincolo_c2_c3_z_SHPS)
+bch_rest_fit_c2_c3_SHPS <- mxRun(bch_rest_c2_c3_SHPS)
+
+LRT_c2_c3_SHPS <- mxCompare(bch_nrest_fit_z_SHPS, bch_rest_fit_c2_c3_SHPS)  #  NON SIGNIFICANT 
+
+
+
+
+
+
+```
+
+
