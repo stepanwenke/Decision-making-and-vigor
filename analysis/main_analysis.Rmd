@@ -21,40 +21,16 @@ options(tinytex.verbose = TRUE)
 ## Settings
 
 ```{r settings}
-library(correlation)
-library(nFactors)
-library(dplyr)
-library(irr)
-library(psych)
-library(corrr)
-library(rempsyc)
-library(ggplot2)
-library(tidyr)
-library(robustbase)
-library(reshape2)
-library(RColorBrewer)
-library(here)
-library(patchwork)
-library(blavaan)
-library(lavaanPlot)
-library(lavaan)
+pkgs <- c("correlation", "nFactors", "dplyr", "irr", "psych", "corrr",
+          "rempsyc", "ggplot2", "tidyr", "robustbase", "reshape2",
+          "RColorBrewer", "here", "patchwork", "blavaan", "lavaanPlot", "lavaan","MVN")
 
-```
-
-## Exclusions
-
-3 types:
-- Pre-registration (PRG)
-- Exclusion of GNG GO > 90 and Effort 100 (NEW)
-- No exlusions (full)
-
-```{r}
-# Exclusion of GNG GO > 90 and Effort 100
-new_excl_day1 <- c()
-prg_excluded_day1 <- c()
-prg_excluded_day2 <- c()
-
-
+for (p in pkgs) {
+  if (!require(p, character.only = TRUE)) {
+    install.packages(p, repos = "https://cloud.r-project.org")
+    library(p, character.only = TRUE)
+  }
+}
 ```
 
 ## Load data
@@ -62,7 +38,6 @@ prg_excluded_day2 <- c()
 # Day 1
 
 data_day1 <- read.csv("../data/comp_modelling/session1_comp_params_anonymized.csv")
-data_day1 <- data_day1 
 
 
 # High scores in the BA scale represents apathy
@@ -93,8 +68,6 @@ data_day1_quests_wmh <- merge(
 
 data_day2 <- read.csv("../data/comp_modelling/session2_comp_params_anonymized.csv")
 data_day2 <- data_day2 
-# %>%
-#   select(-c(phys_beta, phys_k, phys_g))
 
 quest_data_day2_full_id <- read.csv("../output/session2/questionnaire_scores.csv")
 
@@ -1092,7 +1065,6 @@ shapiro_results_df <- data.frame(
 )
 print(shapiro_results_df)
 
-library(MVN)
 # X should be a dataframe or matrix with numeric variables
 result <- mvn(data = fa_data_day1_constrained_quadratic_prg, mvn_test = "mardia")  # Mardia’s skewness & kurtosis
 result <- mvn(data = fa_data_day1_constrained_quadratic_prg, mvn_test = "hz")      # Henze–Zirkler test
@@ -2414,7 +2386,9 @@ foraging_wide_day2  <- reshape_task(foraging_catch_day2,  "foraging")
 catch_tasks_df_day2 <- effort_wide_day2 %>%
   full_join(rlwm_wide_day2, by = "subjID") %>%
   full_join(gng_wide_day2, by = "subjID") %>%
-  full_join(foraging_wide_day2, by = "subjID")catch_quests_tasks_df_day2 <- merge(
+  full_join(foraging_wide_day2, by = "subjID")
+
+catch_quests_tasks_df_day2 <- merge(
   catch_tasks_df_day2,
   quest_catch_day2,
   by = "subjID"
