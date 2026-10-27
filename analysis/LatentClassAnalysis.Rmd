@@ -32,6 +32,19 @@ for (p in pkgs) {
 ```{r}
 df_1_without_id <- read.csv("../data/comp_modelling/session1_comp_params_anonymized.csv")
 
+quests <- read.csv("../output/session1/questionnaire_scores.csv")
+
+# Merge the questionnaires with the parameters dataframe
+df_1_quests <- merge(
+  df_1_without_id,
+  quests,
+  by = "subjID"
+)
+
+# Select only the relevant 5 parameters for the BCH analysis
+df_1_quests <- df_1_quests %>%
+  select(-rlwm_bias, -rlwm_decay, -rlwm_lapse, -rlwm_rho, -gng_alpha, -gng_lapse, phys_beta, phys_lapse)
+
 # Z score normalization
 df_1_without_id_z   <-  as.data.frame(scale(df_1_without_id))
 
@@ -60,21 +73,23 @@ desc <- desc[, c("name", "type", "n", "unique", "mean", "median",
 
 #LCA 1:6
 ```{r}
-# Uncomment the snippet below if you want to re-estimate the LPA de novo. Note that the profiles may be mixed up due to class switching.
+# Estimate the LPA - skip this snippet and continue by loading the .Rdata below if you don't want to re-estimate the LPA
+set.seed(71)
 
-# lca_16_c_z <- tidySEM::mx_profiles(
-#     variances = c("equal","varying"),
-#     covariances = c("zero", "equal", "varying"),
-#     expand_grid = TRUE,
-#     data = data_lca_z,
-#     classes = 1:6,
-#     run=TRUE
-# )
-# 
-# save(lca_16_c_z, file = "lca_16_c_z.RData")
+lca_16_c_z <- tidySEM::mx_profiles(
+    variances = c("equal","varying"),
+    covariances = c("zero", "equal", "varying"),
+    expand_grid = TRUE,
+    data = data_lca_z,
+    classes = 1:6,
+    run=TRUE
+)
 
-# Load the data estimated for the manuscript, one can re-estimate it again but the profiles may not end up in the same order due to the problem of label-switching
-load("helpers/lca_16_c_z.RData")
+save(lca_16_c_z, file = "helpers/lca_16_c_z.RData")
+
+# Load the data estimated for the manuscript, one can re-estimate it again with the seed (71) otherwise the profiles may not end up in the same order due to the problem of label-switching
+
+#load("helpers/lca_16_c_z.RData")
 
 bic_plot<-plot(lca_16_c_z)
 
@@ -160,9 +175,6 @@ results_z$pval
 
 # Plotting results
 ```{r}
-#plotting results
-
-
 plot_bivariate_z<- plot_bivariate(final_lca_model_z)
 print(plot_bivariate_z)
 
@@ -170,8 +182,7 @@ print(plot_bivariate_z)
 
 profiles_4c_z <- tidySEM::plot_profiles(final_lca_model_z)
 str(profiles_4c_z$data)
-jpeg("prfiles_4c_z.jpg")
-# disallinea tutti i layer
+#jpeg("prfiles_4c_z.jpg")
 for(i in 1:length(profiles_4c_z$layers)){
 
   if("GeomPoint" %in% class(profiles_4c_z$layers[[i]]$geom)){
@@ -228,7 +239,7 @@ print(p)
 density_4c_z<-tidySEM::plot_density(final_lca_model_z)
 print(density_4c_z)
 
-jpeg("density_4c_z.jpg")
+#jpeg("density_4c_z.jpg")
 
 ## Adjustments for the manuscript
 p <- profiles_4c_z +
@@ -273,7 +284,7 @@ avg_post_prob<- class_prob(final_lca_model_z, type ="avg.mostlikely") #the avera
 bch_model_z <- tidySEM::BCH(
     x = final_lca_model_z,
     model = "Score_ASRM ~ 1",
-    data = df_1_without_id_z
+    data = df_1_quests
 )
 
 
@@ -353,7 +364,7 @@ LRT_c2_c3 <- mxCompare(bch_nrest_fit_z, bch_rest_fit_c2_c3)  #SIGNIFICANT
 bch_model_z_dep <- tidySEM::BCH(
     x = final_lca_model_z,
     model = "Score_CESD ~ 1",
-    data = df_1_without_id_z
+    data = df_1_quests
 )
 
 
@@ -423,7 +434,7 @@ LRT_c2_c3_dep <- mxCompare(bch_nrest_fit_z_dep, bch_rest_fit_c2_c3_dep)  #NON SI
 bch_model_z_BA <- tidySEM::BCH(
     x = final_lca_model_z,
     model = "behavioral_activation ~ 1",
-    data = df_1_without_id_z
+    data = df_1_quests
 )
 
 
@@ -492,7 +503,7 @@ LRT_c2_c3_BA <- mxCompare(bch_nrest_fit_z_BA, bch_rest_fit_c2_c3_BA)  # SIGNIFIC
 bch_model_z_es <- tidySEM::BCH(
     x = final_lca_model_z,
     model = "emotional_sensitivity ~ 1",
-    data = df_1_without_id_z
+    data = df_1_quests
 )
 
 
@@ -567,7 +578,7 @@ LRT_c2_c3_es <- mxCompare(bch_nrest_fit_z_es, bch_rest_fit_c2_c3_es)  #  NON SIG
 bch_model_z_sm <- tidySEM::BCH(
     x = final_lca_model_z,
     model = "social_motivation ~ 1",
-    data = df_1_without_id_z
+    data = df_1_quests
 )
 
 
@@ -638,7 +649,7 @@ LRT_c2_c3_sm <- mxCompare(bch_nrest_fit_z_sm, bch_rest_fit_c2_c3_sm)  # ALMOST S
 bch_model_z_SHPS <- tidySEM::BCH(
     x = final_lca_model_z,
     model = "Score_SHPS ~ 1",
-    data = df_1_without_id_z
+    data = df_1_quests
 )
 
 
