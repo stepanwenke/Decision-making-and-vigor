@@ -43,7 +43,13 @@ df_1_quests <- merge(
 
 # Select only the relevant 5 parameters for the BCH analysis
 df_1_quests <- df_1_quests %>%
-  select(-rlwm_bias, -rlwm_decay, -rlwm_lapse, -rlwm_rho, -gng_alpha, -gng_lapse, phys_beta, phys_lapse)
+  select(-rlwm_bias, -rlwm_decay, -rlwm_lapse, -rlwm_rho, -gng_alpha, -gng_lapse, -phys_beta, -phys_lapse)
+
+# In order to reproduce the BCH analyses the order of the data matters. It needs to be in the same order as when the analysis was done
+og_subjID_order <- read.csv("../data/session1/original_subjID_order.csv")
+
+# Match the current data frame
+df_1_quests <- df_1_quests[match(og_subjID_order$og_subjID, df_1_quests$subjID),]
 
 # Z score normalization
 df_1_without_id_z   <-  as.data.frame(scale(df_1_without_id))
@@ -75,21 +81,21 @@ desc <- desc[, c("name", "type", "n", "unique", "mean", "median",
 ```{r}
 # Estimate the LPA - skip this snippet and continue by loading the .Rdata below if you don't want to re-estimate the LPA
 set.seed(71)
-
-lca_16_c_z <- tidySEM::mx_profiles(
-    variances = c("equal","varying"),
-    covariances = c("zero", "equal", "varying"),
-    expand_grid = TRUE,
-    data = data_lca_z,
-    classes = 1:6,
-    run=TRUE
-)
-
-save(lca_16_c_z, file = "helpers/lca_16_c_z.RData")
+# 
+# lca_16_c_z <- tidySEM::mx_profiles(
+#     variances = c("equal","varying"),
+#     covariances = c("zero", "equal", "varying"),
+#     expand_grid = TRUE,
+#     data = data_lca_z,
+#     classes = 1:6,
+#     run=TRUE
+# )
+# 
+# save(lca_16_c_z, file = "helpers/lca_16_c_z.RData")
 
 # Load the data estimated for the manuscript, one can re-estimate it again with the seed (71) otherwise the profiles may not end up in the same order due to the problem of label-switching
 
-#load("helpers/lca_16_c_z.RData")
+load("helpers/lca_16_c_z.RData")
 
 bic_plot<-plot(lca_16_c_z)
 
@@ -277,14 +283,13 @@ avg_post_prob<- class_prob(final_lca_model_z, type ="avg.mostlikely") #the avera
 
 ```
 
-
 #BCH Analyses Mania
 ```{r}
 
 bch_model_z <- tidySEM::BCH(
     x = final_lca_model_z,
     model = "Score_ASRM ~ 1",
-    data = df_1_quests
+    data = df_1_quests 
 )
 
 
@@ -331,11 +336,6 @@ bch_rest_fit_c1_c3 <- mxRun(bch_rest_c1_c3)
 
 LRT_c1_c3 <- mxCompare(bch_nrest_fit_z, bch_rest_fit_c1_c3)  # SIGNIFICANT 
 
-
-
-
-
-
 #LRT  2-3
 
 vin_c2_c3_z <- OpenMx::mxConstraint(
@@ -347,17 +347,7 @@ bch_rest_c2_c3 <- OpenMx::mxModel(bch_model_z, vin_c2_c3_z)
 bch_rest_fit_c2_c3 <- mxRun(bch_rest_c2_c3)
 
 LRT_c2_c3 <- mxCompare(bch_nrest_fit_z, bch_rest_fit_c2_c3)  #SIGNIFICANT 
-
-
-
-
-
-
 ```
-
-
-
-
 #BCH Analyses Depression
 ```{r}
 
