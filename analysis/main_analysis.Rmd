@@ -71,6 +71,9 @@ data_day2 <- data_day2
 
 quest_data_day2_full_id <- read.csv("../output/session2/questionnaire_scores.csv")
 
+# Replace the wrong subjID
+quest_data_day2_full_id <- quest_data_day2_full_id %>%
+  mutate(subjID = ifelse(subjID == "392", "346", subjID))
 
 # Merge the wrong subject so it has only row
 quest_data_day2_full_id <- quest_data_day2_full_id %>%
@@ -968,26 +971,11 @@ loadings_long <- pivot_longer(loadings,
 loadings_long <- loadings_long %>%
   mutate(Variable = recode(Variable, !!!param_rename))
 
-# Optional: reorder variables by absolute loading for better visualization
-loadings_long <- loadings_long %>%
-  mutate(Variable = factor(Variable, levels = rev(unique(Variable))))
 
 loadings_long <- loadings_long %>%
   mutate(Factor = recode(Factor, "PA1" = "RL", "PA2" = "Vigor"))
 
 
-# --- 1. DATA PREPARATION ---
-loadings <- as.data.frame(unclass(fa_day1_constrained_quadratic_prg_pa$loadings))
-loadings$Variable <- rownames(loadings)
-
-loadings_long <- pivot_longer(loadings, 
-                              cols = starts_with("PA"), 
-                              names_to = "Factor", 
-                              values_to = "Loading")
-
-# Rename Factors
-loadings_long <- loadings_long %>%
-  mutate(Factor = recode(Factor, "PA1" = "RL", "PA2" = "Vigor"))
 
 # --- 2. FORCE NEW NAMES BY ORDER ---
 unique_vars <- unique(loadings_long$Variable)
@@ -995,8 +983,8 @@ desired_names <- c(
   "RLWM α", 
   "GNG β", 
   "GNG ε", 
-  "Effort κ", 
-  "Foraging Exit Threshold"
+  "Foraging Exit Threshold", 
+  "Effort κ"
 )
 
 force_map <- setNames(desired_names, unique_vars[1:5])
@@ -1383,6 +1371,10 @@ data_icc_day1_constrained_quadratic_prg_retest <- data_day1_constrained_quadrati
 data_icc_day2_constrained_quadratic_prg_retest <- data_day2_constrained_quadratic_prg %>%
   filter(subjID %in% data_day1_constrained_quadratic_prg$subjID)
 
+# Make sure the data for day 2 are in the same order as for day 1
+data_icc_day1_constrained_quadratic_prg_factor_scores <- data_icc_day1_constrained_quadratic_prg_factor_scores[match(data_icc_day1_constrained_quadratic_prg_retest$subjID, data_icc_day1_constrained_quadratic_prg_factor_scores$subjID),]
+
+
 # Get factor scores for participants on day 2 given the loadings from day 1 (if you wanna reproduce older results comment this section and it will use the original factor scores)
 fa_day1_constrained_quadratic_prg_new <- fa(fa_data_day1_constrained_quadratic_prg, nfactors = 2, fm = fm_method, rotate = "varimax")
 fa_day2_constrained_quadratic_prg_new <- fa(fa_data_day2_constrained_quadratic_prg, nfactors = 2, fm = fm_method, rotate = "varimax")
@@ -1392,6 +1384,7 @@ fa_day1_constrained_quadratic_prg_loadings <- fa_day1_constrained_quadratic_prg_
 
 # Get loadings from the Day 2 FA
 fa_day2_constrained_quadratic_prg_loadings <- fa_day2_constrained_quadratic_prg_new$loadings[,1:2]
+
 
 # Reduce the data to only the relevant columns
 data_day2_constrained_quadratic_prg_reduced <- data_icc_day2_constrained_quadratic_prg_retest %>%
@@ -1486,10 +1479,13 @@ Let's check how realiable the questionnaires were in order to estimate how "nois
 ```{r}
 # Make the "common" participants dfs for day 1 and day 2
 quest_icc_day1 <- quest_data_day1_full_id %>%
-  filter(subjID %in% quest_data_day2_full_id$subjID)
+  filter(subjID %in% data_icc_day1_constrained_quadratic_prg_factor_scores$subjID)
 
 quest_icc_day2 <- quest_data_day2_full_id %>% # Match it, just checking
-  filter(subjID %in% quest_icc_day1$subjID)
+  filter(subjID %in% data_icc_day1_constrained_quadratic_prg_factor_scores$subjID)
+
+# Make sure the data for day 2 are in the same order as for day 1
+quest_icc_day2 <- quest_icc_day2[match(quest_icc_day1$subjID, quest_icc_day2$subjID),]
 
 # Do ICC 
 # Get all variable names except subjID
@@ -1605,7 +1601,7 @@ rows_with_outliers <- data_day1_constrained_quadratic_prg_normalized %>%
 z_scores_out <- rows_with_outliers$subjID
 
 # Custom outlier filtration
-custom_outliers <- c("")
+custom_outliers <- z_scores_out
 
 
 # Get the df without those outliers
@@ -2176,27 +2172,29 @@ demo_data <- read.csv('../data/demographics_anonymized.csv')
 
 # Filter only the participants that are also present in the data
 demo_day1 <- demo_data %>%
-  filter(subjID %in% data_day1_constrained_quadratic_prg$subjID) %>%
+  filter(subjID %in% data_day1$subjID) %>%
   select(subjID, Age, Sex)
 
 # Get the demo data for day 2 as well
 demo_day2 <- demo_data %>%
-  filter(subjID %in% data_day2_constrained_quadratic_prg$subjID) %>%
+  filter(subjID %in% data_day2$subjID) %>%
   select(subjID, Age, Sex)
 
 # Get the df with questionnaires subjID and questionnaires only
-day1_prg_quests_only <- data_day1_constrained_quadratic_prg_quests %>%
+day1_quests_only <- data_day1_constrained_quadratic_prg_quests %>%
   select(subjID, factor1, factor2, factor1_pa,factor2_pa,behavioral_activation, social_motivation, emotional_sensitivity, Score_ASRM, Score_CESD, Score_SHPS, Score_PSS, BIS, BAS_Drive, BAS_Fun, BAS_Reward)
 
 # Add Age, Sex to the df with questionnaires 
 day1_prg_quests_and_demo <- merge(
-  day1_prg_quests_only,
+  day1_quests_only,
   demo_day1,
   by = "subjID",
   all.x = TRUE
 )
 
-
+# Exclude 6712264b956f8f9b305ee14b because of missing data Sex
+day1_prg_quests_and_demo <- day1_prg_quests_and_demo %>%
+  filter(subjID != "228")
 
 day1_prg_quests_and_demo$Age <- as.numeric(day1_prg_quests_and_demo$Age)
 # Run regression analyses for each questionnaire to see the effects of age and sex on the score,
