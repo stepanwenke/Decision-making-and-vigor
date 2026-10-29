@@ -1,6 +1,6 @@
 ---
 title: "LatentClassAnalysis"
-author: "Alessandro Ferrante"
+author: "Alessandro Ferrante and Stepan Wenke"
 date: "2025-11-24"
 output:
   pdf_document: default
@@ -45,11 +45,8 @@ df_1_quests <- merge(
 df_1_quests <- df_1_quests %>%
   select(-rlwm_bias, -rlwm_decay, -rlwm_lapse, -rlwm_rho, -gng_alpha, -gng_lapse, -phys_beta, -phys_lapse)
 
-# In order to reproduce the BCH analyses the order of the data matters. It needs to be in the same order as when the analysis was done
-og_subjID_order <- read.csv("../data/session1/original_subjID_order.csv")
-
-# Match the current data frame
-df_1_quests <- df_1_quests[match(og_subjID_order$og_subjID, df_1_quests$subjID),]
+# Match the order of the quests data frame of the df1 frame
+df_1_quests <- df_1_quests[match(df_1_without_id$subjID, df_1_quests$subjID),]
 
 # Z score normalization
 df_1_without_id_z   <-  as.data.frame(scale(df_1_without_id))
@@ -79,7 +76,7 @@ desc <- desc[, c("name", "type", "n", "unique", "mean", "median",
 
 #LCA 1:6
 ```{r}
-# Estimate the LPA - skip this snippet and continue by loading the .Rdata below if you don't want to re-estimate the LPA
+# Estimate the LPA - skip this snippet and continue by loading the .Rdata below if you don't want to re-estimate the LPA, otherwise uncomment the snippet to run mx_profiles
 set.seed(71)
 # 
 # lca_16_c_z <- tidySEM::mx_profiles(
