@@ -45,12 +45,21 @@ Only one parameter is used: if both are given, *task* takes precedence and *day*
 
 Rather than opening *index.html* directly as a file, serve it through a local web server so it behaves as it does when hosted online. With Python 3 installed, run from the repository root:
 
+macOS / Linux (Terminal):
+
 ```bash
 ./serve.sh day=1
 ./serve.sh task=effort
 ```
 
-This starts a server reachable only from your machine and opens the battery in your browser with the given parameter. Press Ctrl+C to stop it. 
+Windows (Command Prompt or PowerShell):
+
+```
+.\serve day=1
+.\serve task=effort
+```
+
+This starts a server reachable only from your machine and opens the battery in your browser with the given parameter. Press Ctrl+C to stop it. Python is only needed for these scripts; on Windows it is not pre-installed and can be downloaded from https://www.python.org/downloads/ (tick "Add python.exe to PATH" during installation). 
 
 ## Saving data
 
