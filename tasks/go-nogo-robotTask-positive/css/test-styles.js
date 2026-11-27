@@ -1,9 +1,9 @@
 var gonogo_styles = `
 
 @import url("https://fonts.googleapis.com/css?family=Orbitron|Quicksand:500");
-@font-face { font-family: Elianto; src: url('tasks/go-nogo-robotTask/css/Elianto-Regular.ttf'); }
-@font-face { font-family: BACS1; src: url('tasks/go-nogo-robotTask/css/BACS1.otf'); }
-@font-face { font-family: BACS2; src: url('tasks/go-nogo-robotTask/css/BACS2serif.otf'); }
+@font-face { font-family: Elianto; src: url('tasks/go-nogo-robotTask-positive/css/Elianto-Regular.ttf'); }
+@font-face { font-family: BACS1; src: url('tasks/go-nogo-robotTask-positive/css/BACS1.otf'); }
+@font-face { font-family: BACS2; src: url('tasks/go-nogo-robotTask-positive/css/BACS2serif.otf'); }
 
 /* Controls scale of game */
 :root {
